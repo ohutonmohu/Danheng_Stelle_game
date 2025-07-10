@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>丹恒と星ちゃんの星玉集めゲーム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Interフォントを優先的に使用 */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #1a1a2e; /* 宇宙っぽい暗い背景 */
+            color: #e0e0e0; /* 明るい文字色 */
+            display: flex;
+            flex-direction: column; /* 垂直方向に並べる */
+            align-items: center; /* 水平方向中央寄せ */
+            justify-content: center; /* 垂直方向中央寄せ */
+            width: 100vw; /* 画面幅いっぱいに */
+            height: 100vh; /* 画面高さいっぱいに */
+            margin: 0;
+            overflow: hidden; /* スクロールバーが出ないように */
+        }
+
+        .game-container {
+            background-color: #2a2a4a; /* ゲームエリアの背景 */
+            border-radius: 1rem; /* 角を丸く */
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.5); /* 影 */
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* コンテナ内の要素を中央に */
+            width: 100%; /* 親要素 (body) の幅いっぱいに */
+            height: 100%; /* 親要素 (body) の高さいっぱいに */
+            box-sizing: border-box; /* パディングを幅に含める */
+            max-width: none; /* 以前の制限を解除 */
+            max-height: none; /* 以前の制限を解除 */
+        }
+
+        canvas {
+            /* 背景画像の設定 */
+            background-image: url('./background.png'); /* ローカルの背景画像パス */
+            background-size: cover; /* キャンバス全体を覆うように拡大・縮小 */
+            background-position: center; /* 画像を中央に配置 */
+            background-repeat: no-repeat; /* 画像を繰り返さない */
+            background-color: transparent; /* 背景画像が見えるように透明に設定 */
+
+            border: 2px solid #5a5a7a; /* 枠線 */
+            border-radius: 0.75rem; /* キャンバスの角も丸く */
+            display: block;
+            /* widthとheightはJavaScriptで動的に設定するため、CSSからは削除 */
+            touch-action: none; /* タッチイベントのデフォルト動作を無効化 */
+            object-fit: contain; /* アスペクト比を維持しつつ、コンテナに収まるように */
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* ゲーム情報とコントロールの配置を調整 */
+        .game-info, .game-controls {
+            flex-shrink: 0; /* 縮まないように */
+            margin-top: 1rem; /* スペースを確保 */
+        }
+
+        /* メッセージボックスのスタイル調整 */
+        .message-box {
+            position: fixed;
+            top: 50%; /* 画面中央に移動 */
+            left: 50%;
+            transform: translate(-50%, -50%); /* 中央揃え */
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            z-index: 1000; /* 他の要素より手前に表示 */
+            box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.7);
+            font-size: 1.5rem;
+            font-weight: bold;
+            
+            /* 初期状態では非表示にし、クリックイベントも受け付けないようにする */
+            display: none;
+        }
+
+        .message-box button {
+            margin-top: 1.5rem;
+        }
+
+        /* ゲーム情報表示を中央揃えにする */
+        #game-info {
+            text-align: center;
+        }
+
+        /* BGMコントロールアイコンのスタイル */
+        #bgmControl {
+            position: absolute;
+            top: 1rem; /* 上からの位置 */
+            right: 1rem; /* 右からの位置 */
+            font-size: 2.5rem; /* アイコンサイズを大きく */
+            cursor: pointer;
+            color: #e0e0e0; /* アイコンの色 */
+            z-index: 20; /* 他の要素より手前に表示 */
+            background-color: rgba(0, 0, 0, 0.3); /* 半透明の背景 */
+            border-radius: 50%; /* 円形に */
+            width: 3.5rem; /* 幅 */
+            height: 3.5rem; /* 高さ */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.3); /* 影 */
+            transition: transform 0.1s ease-in-out; /* ホバー/タップ時のアニメーション */
+        }
+
+        #bgmControl:active {
+            transform: scale(0.95); /* タップ時に少し縮む */
+        }
+
+        /* スコアランキングボックスのスタイル */
+        #rankingBox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(42, 42, 74, 0.95); /* ゲームエリアの背景に似た色、少し濃く */
+            color: #e0e0e0;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            z-index: 1001; /* メッセージボックスより手前に */
+            box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.7);
+            width: 90%; /* モバイルでも見やすいように幅を調整 */
+            max-width: 400px; /* PCでの最大幅 */
+            max-height: 80vh; /* 高さの制限 */
+            overflow-y: auto; /* スコアが多い場合にスクロール可能に */
+            display: none; /* 初期状態では非表示 */
+            box-sizing: border-box;
+        }
+
+        #rankingList ol {
+            padding-left: 1.5rem; /* リストのインデント */
+        }
+        #rankingList li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* 名前入力ボックスのスタイル */
+        #nameInputBox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(42, 42, 74, 0.98); /* ランキングボックスよりさらに濃く */
+            color: #e0e0e0;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            z-index: 1002; /* ランキングボックスより手前に */
+            box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.9);
+            width: 90%;
+            max-width: 350px;
+            display: none; /* 初期状態では非表示 */
+            box-sizing: border-box;
+        }
+
+        #nameInputBox input[type="text"] {
+            width: calc(100% - 2rem); /* 左右パディングを考慮 */
+            padding: 0.75rem;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #5a5a7a;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 1.1rem;
+        }
+
+        /* 全てのゲームボタンに適用される基本スタイル */
+        .game-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out, box-shadow 0.2s ease-in-out;
+            background-color: #4a4a6e; /* デフォルトのボタン背景色 */
+            color: #e0e0e0;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            display: inline-block; /* ボタンが横並びになるように */
+            margin: 0.5rem; /* ボタン間の余白 */
+        }
+
+        .game-button:hover {
+            background-color: #5a5a8a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        .game-button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* スコア登録ボタン専用のスタイル */
+        .register-button-style {
+            background-color: #8a2be2; /* 青紫系の色 */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5); /* 強めの影 */
+            font-size: 1.2rem; /* 少し大きめのテキスト */
+            padding: 1rem 2rem; /* 大きめのパディング */
+            margin-top: 1.5rem; /* 上に余白を追加して他の要素と切り離す */
+        }
+
+        .register-button-style:hover {
+            background-color: #9932cc; /* ホバー時の色 */
+        }
+
+        /* レスポンシブ調整 */
+        @media (max-width: 768px) { /* タブレットおよびそれ以下の画面幅 */
+            h1 {
+                font-size: 2.5rem; /* タイトルを少し小さく */
+            }
+            .game-info div { /* スコア、ミス、お助け回数 */
+                font-size: 1.1rem;
+            }
+            .game-button {
+                padding: 0.8rem 1.6rem;
+                font-size: 1rem;
+            }
+            .game-controls {
+                flex-direction: column; /* ボタンを縦並びに */
+                width: 100%;
+                align-items: center;
+            }
+            #bgmControl {
+                font-size: 2rem;
+                width: 3rem;
+                height: 3rem;
+            }
+            .message-box {
+                padding: 1.5rem;
+                font-size: 1.2rem;
+            }
+            #nameInputBox input[type="text"] {
+                padding: 0.6rem;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) { /* スマートフォンなど、より小さな画面幅 */
+            h1 {
+                font-size: 2rem; /* タイトルをさらに小さく */
+                margin-bottom: 1rem;
+            }
+            .game-info div {
+                font-size: 1rem;
+            }
+            .game-button {
+                padding: 0.75rem 1.2rem;
+                font-size: 0.9rem;
+                margin: 0.3rem; /* ボタン間の余白を減らす */
+            }
+            .message-box {
+                width: 95%; /* 非常に小さな画面では幅を広げる */
+                padding: 1rem;
+                font-size: 1rem;
+            }
+            #rankingList li {
+                font-size: 0.9rem;
+            }
+            #nameInputBox {
+                padding: 1.5rem;
+            }
+            #nameInputBox input[type="text"] {
+                width: calc(100% - 1.5rem); /* 入力フィールドの幅を調整 */
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+            .register-button-style {
+                font-size: 1rem;
+                padding: 0.8rem 1.5rem;
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="text-3xl font-bold mb-4 text-purple-300">丹恒と星ちゃんの星玉集め</h1>
+        <canvas id="gameCanvas"></canvas>
+        <div id="game-info" class="game-info">
+            <div id="score" class="text-xl">スコア: 0</div>
+            <div id="lives" class="text-xl">ミス: 0 / 3</div>
+            <div id="assistCalls" class="text-xl">お助け: 5 / 5</div> <!-- お助けキャラの召喚回数表示を追加 -->
+            <div id="assistKeyHint" class="text-lg mt-2"></div> <!-- 新しいヒント表示要素 -->
+            <div id="bgmStatus" class="text-lg mt-1">BGM: オン</div> <!-- BGMステータス表示要素を追加 -->
+        </div>
+        <div id="game-controls" class="game-controls">
+            <!-- ボタンを最初から無効化する -->
+            <button id="startButton" class="game-button" disabled>ゲームスタート</button>
+            <!-- スペースキーでの再スタートは機能として残しつつ、ボタンは非表示にする -->
+            <button id="restartButton" class="game-button hidden">(スペースキーでもう一度)</button>
+            <!-- お助けキャラ召喚ボタンも機能は残しつつ、表示は非表示にする -->
+            <button id="assistButton" class="game-button hidden">お助けキャラ召喚</button>
+            <button id="showRankingButton" class="game-button mt-4">スコアランキングを見る</button>
+        </div>
+    </div>
+
+    <div id="messageBox" class="message-box">
+        <p id="messageText"></p>
+        <button id="messageBoxButton" class="game-button">OK</button>
+        <button id="registerScoreButton" class="game-button register-button-style mt-4 hidden">スコアを登録する</button> <!-- スコア登録ボタンに新しいスタイルを適用 -->
+    </div>
+
+    <!-- BGM用のオーディオタグを追加 -->
+    <audio id="gameBGM" src="./bgm.mp3" loop></audio>
+
+    <!-- BGMコントロールアイコン -->
+    <div id="bgmControl" class="bgm-control"></div>
+
+    <!-- スコアランキングボックス -->
+    <div id="rankingBox" class="message-box">
+        <h2 class="text-2xl font-bold mb-4">スコアランキング</h2>
+        <div id="rankingList" class="text-left text-lg">
+            <!-- Ranking items will be inserted here -->
+            <p>読み込み中...</p>
+        </div>
+        <button id="closeRankingButton" class="game-button mt-4">閉じる</button>
+    </div>
+
+    <!-- 名前入力ボックス -->
+    <div id="nameInputBox">
+        <h2 class="text-2xl font-bold mb-4">名前を入力してください</h2>
+        <input type="text" id="playerNameInput" placeholder="あなたの名前" maxlength="15">
+        <button id="submitNameButton" class="game-button">登録</button>
+    </div>
+
+    <script type="module">
+        // Firebase SDKのインポート
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Canvas環境で自動的に提供される変数です。
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const assistCallsDisplay = document.getElementById('assistCalls'); // お助けキャラの召喚回数表示要素
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const assistButton = document.getElementById('assistButton'); // お助けキャラ召喚ボタン
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const messageBoxButton = document.getElementById('messageBoxButton');
+        const registerScoreButton = document.getElementById('registerScoreButton'); // スコア登録ボタン
+        const gameBGM = document.getElementById('gameBGM'); // BGM要素を取得
+        const bgmStatusDisplay = document.getElementById('bgmStatus'); // BGMステータス表示要素を取得
+        const bgmControl = document.getElementById('bgmControl'); // BGMコントロールアイコン要素を取得
+        const rankingBox = document.getElementById('rankingBox'); // ランキングボックス要素
+        const rankingList = document.getElementById('rankingList'); // ランキングリスト要素
+        const showRankingButton = document.getElementById('showRankingButton'); // ランキング表示ボタン
+        const closeRankingButton = document.getElementById('closeRankingButton'); // ランキング閉じるボタン
+        const nameInputBox = document.getElementById('nameInputBox'); // 名前入力ボックス
+        const playerNameInput = document.getElementById('playerNameInput'); // プレイヤー名入力フィールド
+        const submitNameButton = document.getElementById('submitNameButton'); // 名前登録ボタン
+
+        let animationFrameId;
+        let gameRunning = false;
+        let score = 0;
+        let lives = 3;
+        const maxLives = 3;
+        let imagesLoaded = false; // 画像が読み込まれたかどうかのフラグ
+        let isBGMOn = true; // BGMの状態を管理する変数
+        let currentVolume = 0.3; // 初期音量を30%に設定 (0.0～1.0)
+
+        // Firebase関連の変数
+        let app;
+        let db;
+        let auth;
+        let userId = 'anonymous'; // ユーザーID、認証後に更新される
+
+        // キャラクターとアイテムの定義
+        const danHeng = {
+            x: 0,
+            y: 0,
+            width: 80, // サイズを大きく
+            height: 80, // サイズを大きく
+            speed: 16, // 丹恒の移動速度
+            image: new Image()
+        };
+        danHeng.image.src = "./danheng.png"; // HTMLファイルと同じディレクトリにあるdanheng.pngを読み込む
+
+        const hoshino = {
+            x: 0,
+            y: 0,
+            width: 90, // サイズを大きく
+            height: 90, // サイズを大きく
+            speed: 3,
+            direction: 1, // 1:右, -1:左
+            image: new Image()
+        };
+        hoshino.image.src = "./stelle.png"; // HTMLファイルと同じディレクトリにあるstelle.pngを読み込む
+
+        // お助けキャラの定義
+        const assistCharacter = {
+            x: 0,
+            y: 0,
+            width: 70,
+            height: 70,
+            speed: 10, // お助けキャラの移動速度
+            direction: 1, // 移動方向 (1:右, -1:左)
+            image: new Image(),
+            active: false, // 現在活動中か
+            duration: 180, // 活動時間 (フレーム数、例: 60fpsで3秒)
+            timer: 0 // 残り活動時間
+        };
+        assistCharacter.image.src = "./assist_char.png"; // HTMLファイルと同じディレクトリにあるassist_char.pngを読み込む
+
+        // 画像の読み込み完了を待つ
+        let loadedImagesCount = 0;
+        const totalImagesToLoad = 3; // 丹恒、星ちゃん、お助けキャラの3枚
+        let imageLoadTimeout; // タイムアウトIDを保持する変数
+
+        // 画像が一つ読み込まれた、またはエラーになった時の処理
+        function handleImageLoadComplete() {
+            loadedImagesCount++;
+            console.log(`[DEBUG] Image load/error count: ${loadedImagesCount}`); // Debug log
+            if (loadedImagesCount === totalImagesToLoad) {
+                clearTimeout(imageLoadTimeout); // タイムアウトをクリア
+                imagesLoaded = true;
+                console.log("[DEBUG] All images finished loading/errored."); // Debug log
+            }
+        }
+
+        // Attach event listeners BEFORE setting src
+        danHeng.image.onload = handleImageLoadComplete;
+        hoshino.image.onload = handleImageLoadComplete;
+        assistCharacter.image.onload = handleImageLoadComplete; // お助けキャラの画像ロードハンドラ
+        danHeng.image.onerror = () => {
+            console.error("[ERROR] Failed to load Dan Heng image. Using fallback.");
+            handleImageLoadComplete(); // エラーでもカウントを進める
+        };
+        hoshino.image.onerror = () => {
+            console.error("[ERROR] Failed to load Hoshino image. Using fallback.");
+            handleImageLoadComplete(); // エラーでもカウントを進める
+        };
+        assistCharacter.image.onerror = () => {
+            console.error("[ERROR] Failed to load Assist Character image. Using fallback.");
+            handleImageLoadComplete(); // エラーでもカウントを進める
+        };
+
+
+        const stellarJades = [];
+        const jadeSize = 30;
+        let jadeSpawnInterval = 1000; // ms (難易度によって変動)
+        let lastJadeSpawnTime = 0;
+
+        let assistCalls = 5; // お助けキャラの初期召喚回数
+        const maxAssistCalls = 5; // お助けキャラの最大召喚回数
+        const assistRecoveryPoints = 100; // 100点ごとに1回回復
+        let scoreMilestone = 0; // 次の回復までのスコア基準点
+        let infoMessageTimeoutId = null; // メッセージ自動消去用のタイマーID
+        let currentLevel = 1; // 現在のレベル
+
+        // 難易度設定のベース値とスケールファクター
+        const baseSettings = {
+            jadeInterval: 1000,
+            jadeSpeedMin: 2,
+            jadeSpeedRange: 3,
+            hoshinoSpeed: 3
+        };
+        const maxSettings = { // 最大難易度の上限
+            jadeInterval: 400, // 最速で400ms間隔
+            jadeSpeedMin: 5,   // 最速で落下速度5
+            hoshinoSpeed: 6    // 最速で星ちゃん速度6
+        };
+        const difficultyScaleFactor = 0.05; // スコア100点あたりの難易度上昇率 (例: 0.05 = 5%)
+
+        // メッセージボックスを表示する関数
+        // type: 'loading', 'info', 'gameOver', 'initial_start'
+        function showMessage(text, type = 'info') {
+            // 既存の自動消去タイマーがあればクリア
+            if (infoMessageTimeoutId) {
+                clearTimeout(infoMessageTimeoutId);
+                infoMessageTimeoutId = null;
+            }
+
+            messageText.innerHTML = text.replace(/\n/g, '<br>'); // \nを<br>に変換
+            messageBox.style.display = 'block'; // メッセージボックスを表示
+
+            messageBoxButton.classList.add('hidden'); // ボタンをデフォルトで隠す
+            registerScoreButton.classList.add('hidden'); // スコア登録ボタンもデフォルトで隠す
+            messageBoxButton.onclick = null; // 以前のクリックハンドラをクリア
+
+            if (type === 'loading') {
+                // ローディング中はボタンを隠したまま
+            } else if (type === 'info') {
+                // OKボタンは表示しない (自動消去のため)
+                // 2秒後に自動で消えるように設定
+                infoMessageTimeoutId = setTimeout(() => {
+                    messageBox.style.display = 'none';
+                    infoMessageTimeoutId = null; // タイマーIDをクリア
+                }, 2000); // 2000ミリ秒 = 2秒
+            } else if (type === 'gameOver') {
+                messageBoxButton.classList.remove('hidden'); // OKボタンを表示
+                messageBoxButton.textContent = "(スペースキーでもう一度)"; // テキストを更新
+                messageBoxButton.onclick = () => {
+                    messageBox.style.display = 'none'; // メッセージボックスを非表示に
+                    resetGame();
+                    startGame();
+                };
+                registerScoreButton.classList.remove('hidden'); // スコア登録ボタンを表示
+            } else if (type === 'initial_start') {
+                // 初期開始メッセージは自動で消えない
+            }
+            console.log(`[DEBUG] Message box displayed: "${text}", type: ${type}`);
+        }
+
+        // 描画関数
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // キャンバスをクリア。背景画像はCSSで設定されているためクリアでOK
+
+            // 丹恒を描画 (画像が読み込まれていれば画像、そうでなければ四角)
+            if (danHeng.image.complete && danHeng.image.naturalWidth !== 0) {
+                ctx.drawImage(danHeng.image, danHeng.x, danHeng.y, danHeng.width, danHeng.height);
+            } else {
+                // 画像が読み込まれていない場合のフォールバック（デバッグ用）
+                ctx.fillStyle = 'blue';
+                ctx.fillRect(danHeng.x, danHeng.y, danHeng.width, danHeng.height);
+            }
+
+            // 星ちゃんを描画 (画像が読み込まれていれば画像、そうでなければ四角)
+            if (hoshino.image.complete && hoshino.image.naturalWidth !== 0) {
+                ctx.drawImage(hoshino.image, hoshino.x, hoshino.y, hoshino.width, hoshino.height);
+            } else {
+                // 画像が読み込まれていない場合のフォールバック（デバッグ用）
+                ctx.fillStyle = 'purple';
+                ctx.fillRect(hoshino.x, hoshino.y, hoshino.width, hoshino.height);
+            }
+
+            // お助けキャラを描画 (活動中の場合)
+            if (assistCharacter.active) {
+                if (assistCharacter.image.complete && assistCharacter.image.naturalWidth !== 0) {
+                    ctx.drawImage(assistCharacter.image, assistCharacter.x, assistCharacter.y, assistCharacter.width, assistCharacter.height);
+                } else {
+                    ctx.fillStyle = 'yellow'; // フォールバックカラー
+                    ctx.fillRect(assistCharacter.x, assistCharacter.y, assistCharacter.width, assistCharacter.height);
+                }
+            }
+
+            // 星玉を描画 (ダイヤモンドの形)
+            stellarJades.forEach(jade => {
+                ctx.fillStyle = '#ADD8E6'; // 明るい青色
+                ctx.beginPath();
+                // ダイヤモンドの頂点
+                ctx.moveTo(jade.x + jadeSize / 2, jade.y); // 上
+                ctx.lineTo(jade.x + jadeSize, jade.y + jadeSize / 2); // 右
+                ctx.lineTo(jade.x + jadeSize / 2, jade.y + jadeSize); // 下
+                ctx.lineTo(jade.x, jade.y + jadeSize / 2); // 左
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#87CEEB'; // 枠線の色
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+        }
+
+
+        // ゲームのリセット
+        function resetGame() {
+            score = 0;
+            lives = maxLives;
+            assistCalls = maxAssistCalls; // お助けキャラの召喚回数をリセット
+            scoreMilestone = 0; // スコア回復の基準点をリセット
+            currentLevel = 1; // レベルをリセット
+            
+            // 難易度パラメータを初期値にリセット
+            jadeSpawnInterval = baseSettings.jadeInterval;
+            hoshino.speed = baseSettings.hoshinoSpeed;
+
+            stellarJades.length = 0; // 配列をクリア
+            updateInfo();
+            gameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+            startButton.classList.remove('hidden');
+            restartButton.classList.add('hidden');
+            assistButton.disabled = false; // お助けキャラボタンを有効化
+            assistCharacter.active = false; // お助けキャラを非アクティブに
+            // 丹恒と星ちゃんの初期位置をリセット
+            danHeng.x = (canvas.width - danHeng.width) / 2;
+            danHeng.y = canvas.height - danHeng.height - 10; // リセット時にも位置を再計算
+            hoshino.x = (canvas.width - hoshino.width) / 2;
+            hoshino.y = canvas.height - hoshino.height - danHeng.height - 20; // リセット時にも位置を再計算
+            draw(); // 初期状態を描画
+            pressedKeys = {}; // キーの状態をリセット
+            // BGMは停止しない (ゲームタブを閉じるまでループ)
+        }
+
+        // 情報表示の更新
+        function updateInfo() {
+            scoreDisplay.textContent = `スコア: ${score}`;
+            livesDisplay.textContent = `ミス: ${lives} / ${maxLives}`;
+            assistCallsDisplay.textContent = `お助け: ${assistCalls} / ${maxAssistCalls}`; // お助けキャラの召喚回数を更新
+            
+            // 新しいヒントの追加
+            const assistKeyHint = document.getElementById('assistKeyHint');
+            if (gameRunning) {
+                assistKeyHint.textContent = `スペースキー：お助けキャラを召喚`;
+            } else {
+                assistKeyHint.textContent = ''; // ゲーム中でない場合は非表示
+            }
+
+            // BGMステータスの更新
+            bgmStatusDisplay.textContent = `BGM: ${isBGMOn ? 'オン' : 'オフ'}`;
+            // BGMコントロールアイコンの更新
+            bgmControl.innerHTML = `<i class="fas ${isBGMOn ? 'fa-volume-up' : 'fa-volume-mute'}"></i>`;
+
+            // お助けキャラボタンの有効/無効を切り替える (ボタンはhiddenなので、JSで無効化する必要はないが、念のため)
+            if (gameRunning && assistCalls > 0 && !assistCharacter.active) {
+                assistButton.disabled = false;
+            } else {
+                assistButton.disabled = true;
+            }
+        }
+
+        // お助けキャラを召喚する関数
+        function callAssistCharacter() {
+            if (gameRunning && assistCalls > 0 && !assistCharacter.active) {
+                assistCalls--;
+                updateInfo();
+                assistCharacter.active = true;
+                assistCharacter.timer = assistCharacter.duration;
+                // お助けキャラをランダムな位置から出現させ、反対方向へ移動
+                assistCharacter.x = Math.random() < 0.5 ? 0 : canvas.width - assistCharacter.width; // 画面端に配置
+                assistCharacter.y = hoshino.y - 80; // 星ちゃんより少し上
+                assistCharacter.direction = (assistCharacter.x === 0) ? 1 : -1; // 出現位置に応じて移動方向を設定
+                console.log("[DEBUG] Assist character called!");
+            } else if (!gameRunning) {
+                showMessage("ゲームを開始してからお助けキャラを呼んでね！", 'info');
+            } else if (assistCharacter.active) {
+                showMessage("お助けキャラは現在活動中です！", 'info');
+            } else {
+                showMessage("お助けキャラの召喚回数がありません！", 'info');
+            }
+        }
+
+        // キャンバスとキャラクターのサイズを調整
+        function resizeCanvas() {
+            const gameContainer = document.querySelector('.game-container');
+            const h1 = document.querySelector('h1');
+            const gameInfo = document.getElementById('game-info');
+            const gameControls = document.getElementById('game-controls');
+
+            // コンテナの利用可能な幅と高さ
+            const containerWidth = gameContainer.clientWidth;
+            const containerHeight = gameContainer.clientHeight;
+
+            // UI要素の合計高さ（マージンやパディングも考慮）
+            const getElementHeightWithMargin = (element) => {
+                if (!element) return 0;
+                const style = getComputedStyle(element);
+                return element.offsetHeight + parseFloat(style.marginTop) + parseFloat(style.marginBottom);
+            };
+
+            const uiElementsHeight = getElementHeightWithMargin(h1) +
+                                     getElementHeightWithMargin(gameInfo) +
+                                     getElementHeightWithMargin(gameControls);
+
+            // キャンバスが利用できる領域
+            const availableCanvasWidth = containerWidth - parseFloat(getComputedStyle(gameContainer).paddingLeft) - parseFloat(getComputedStyle(gameContainer).paddingRight);
+            const availableCanvasHeight = containerHeight - uiElementsHeight - parseFloat(getComputedStyle(gameContainer).paddingTop) - parseFloat(getComputedStyle(gameContainer).paddingBottom);
+
+            const targetAspectRatio = 16 / 9;
+            let newCanvasWidth;
+            let newCanvasHeight;
+
+            if (availableCanvasWidth / availableCanvasHeight > targetAspectRatio) {
+                // 利用可能な領域が目標より横長の場合、高さを基準に幅を計算
+                newCanvasHeight = availableCanvasHeight;
+                newCanvasWidth = availableCanvasHeight * targetAspectRatio;
+            } else {
+                // 利用可能な領域が目標より縦長または同じ場合、幅を基準に高さを計算
+                newCanvasWidth = availableCanvasWidth;
+                newCanvasHeight = availableCanvasWidth / targetAspectRatio;
+            }
+
+            // キャンバスの描画バッファサイズを設定
+            canvas.width = newCanvasWidth;
+            canvas.height = newCanvasHeight;
+
+            // キャンバスの表示サイズをCSSで設定 (object-fit: contain; と合わせて使う)
+            canvas.style.width = `${newCanvasWidth}px`;
+            canvas.style.height = `${newCanvasHeight}px`;
+
+            // キャラクターの初期位置を再計算
+            danHeng.x = (canvas.width - danHeng.width) / 2;
+            danHeng.y = canvas.height - danHeng.height - 10;
+
+            hoshino.x = (canvas.width - hoshino.width) / 2;
+            hoshino.y = canvas.height - hoshino.height - danHeng.height - 20;
+
+            draw(); // リサイズ後に再描画
+        }
+
+        // ゲームループ
+        function gameLoop(currentTime) {
+            if (!gameRunning || !imagesLoaded) return; // 画像が読み込まれていない場合は実行しない
+
+            update();
+            draw();
+
+            // 星玉の生成
+            if (currentTime - lastJadeSpawnTime > jadeSpawnInterval) {
+                stellarJades.push({
+                    x: Math.random() * (canvas.width - jadeSize),
+                    y: -jadeSize, // 画面外から降らせる
+                    // 難易度に応じた星玉の速度を適用
+                    speed: Math.min(maxSettings.jadeSpeedMin, baseSettings.jadeSpeedMin + (Math.floor(score / 100) * difficultyScaleFactor * 10)) + Math.random() * baseSettings.jadeSpeedRange
+                });
+                lastJadeSpawnTime = currentTime;
+            }
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // キーが押されている状態を管理するオブジェクト
+        let pressedKeys = {};
+
+        // 更新関数 (ゲームループから分離して、描画前に呼び出されることを明確化)
+        function update() {
+            // レベルの更新と表示
+            const newLevel = Math.floor(score / 100) + 1;
+            if (newLevel > currentLevel) {
+                currentLevel = newLevel;
+                showMessage(`レベルアップ！\nレベル${currentLevel}！`, 'info'); // メッセージを変更
+                console.log(`[DEBUG] Level increased to ${currentLevel}. Score: ${score}`);
+            }
+
+            // 難易度パラメータをスコアに応じて動的に計算
+            const scoreFactor = Math.floor(score / 100);
+
+            // 星玉の生成間隔
+            jadeSpawnInterval = Math.max(maxSettings.jadeInterval, baseSettings.jadeInterval - (scoreFactor * 50)); // 100点ごとに50ms短縮
+
+            // 星ちゃんの移動速度
+            hoshino.speed = Math.min(maxSettings.hoshinoSpeed, baseSettings.hoshinoSpeed + (scoreFactor * 0.5)); // 100点ごとに0.5増加
+
+            // 丹恒の移動 (キーの状態に基づいて移動)
+            if (pressedKeys['ArrowLeft'] || pressedKeys['a']) {
+                danHeng.x -= danHeng.speed;
+            }
+            if (pressedKeys['ArrowRight'] || pressedKeys['d']) {
+                danHeng.x += danHeng.speed;
+            }
+
+            // 画面端での制限
+            if (danHeng.x < 0) danHeng.x = 0;
+            if (danHeng.x + danHeng.width > canvas.width) danHeng.x = canvas.width - danHeng.width;
+
+            // 星ちゃんの移動
+            hoshino.x += hoshino.speed * hoshino.direction;
+            if (hoshino.x + hoshino.width > canvas.width || hoshino.x < 0) {
+                hoshino.direction *= -1; // 壁に当たったら反転
+            }
+
+            // お助けキャラの移動と星玉収集
+            if (assistCharacter.active) {
+                assistCharacter.x += assistCharacter.speed * assistCharacter.direction;
+                // 画面端に到達したら反転
+                if (assistCharacter.x + assistCharacter.width > canvas.width || assistCharacter.x < 0) {
+                    assistCharacter.direction *= -1;
+                }
+                assistCharacter.timer--;
+                
+                // 活動時間終了で非アクティブ化
+                if (assistCharacter.timer <= 0) {
+                    assistCharacter.active = false;
+                    console.log("[DEBUG] Assist character deactivated (time out).");
+                }
+
+                // 星玉を収集
+                for (let i = stellarJades.length - 1; i >= 0; i--) {
+                    const jade = stellarJades[i];
+                    // お助けキャラと星玉の衝突判定
+                    if (jade.x < assistCharacter.x + assistCharacter.width &&
+                        jade.x + jadeSize > assistCharacter.x &&
+                        jade.y < assistCharacter.y + assistCharacter.height &&
+                        jade.y + jadeSize > assistCharacter.y) {
+                        score += 20; // お助けキャラがゲットで20点
+                        stellarJades.splice(i, 1); // 星玉を削除
+                    }
+                }
+            }
+
+            // 星玉の移動と衝突判定（丹恒と星ちゃん）
+            for (let i = stellarJades.length - 1; i >= 0; i--) {
+                const jade = stellarJades[i];
+                jade.y += jade.speed;
+
+                // 丹恒との衝突判定
+                if (jade.x < danHeng.x + danHeng.width &&
+                    jade.x + jadeSize > danHeng.x &&
+                    jade.y < danHeng.y + danHeng.height &&
+                    jade.y + jadeSize > danHeng.y) {
+                    score += 10; // 星玉ゲットで10点
+                    stellarJades.splice(i, 1); // 星玉を削除
+                }
+                // 星ちゃんとの衝突判定（ボーナス）
+                else if (jade.x < hoshino.x + hoshino.width &&
+                         jade.x + jadeSize > hoshino.x &&
+                         jade.y < hoshino.y + hoshino.height &&
+                         jade.y + jadeSize > hoshino.y) {
+                    score += 5; // 星ちゃんがゲットで5点（丹恒が触れてなくても）
+                    stellarJades.splice(i, 1); // 星玉を削除
+                }
+                // 画面下部に到達したらミス
+                else if (jade.y > canvas.height) {
+                    lives--;
+                    stellarJades.splice(i, 1);
+                }
+            }
+
+            // お助けキャラ召喚回数の回復
+            while (score >= scoreMilestone + assistRecoveryPoints) {
+                scoreMilestone += assistRecoveryPoints;
+                if (assistCalls < maxAssistCalls) {
+                    assistCalls++;
+                    showMessage("お助けキャラの召喚回数が回復したよ！", 'info');
+                    console.log("[DEBUG] Assist call recovered.");
+                }
+            }
+
+            updateInfo();
+
+            // ゲームオーバー判定
+            if (lives <= 0) {
+                gameOver();
+            }
+        }
+
+        // LLMでゲームオーバーメッセージを生成する関数
+        async function generateGameOverMessage(currentScore) {
+            // --- LLM API呼び出し部分（ローカル環境では動作しないため、ダミーメッセージを返す） ---
+            console.log("[DEBUG] LLM API call skipped for local environment. Returning dummy message.");
+            let dummyMessage = "";
+            if (currentScore < 50) {
+                dummyMessage = `残念、次こそは頑張りましょう！`;
+            } else if (currentScore < 100) {
+                dummyMessage = `よくやりましたね！もっと上を目指せますよ！`;
+            } else {
+                dummyMessage = `素晴らしい！君は開拓の星だ！`;
+            }
+            return dummyMessage;
+
+            /*
+            // 以下はCanvas環境でのみ動作します
+            let chatHistory = [];
+            const prompt = `あなたは「崩壊：スターレイル」のキャラクターのような口調で、ゲームの終了メッセージを作成してください。プレイヤーのスコアは ${currentScore} です。
+            
+            スコアが50点未満の場合：少し残念だけど、次も頑張ろう！という励ましのメッセージ。
+            スコアが50点以上100点未満の場合：よくやった！もっと上を目指せるよ！という褒めと期待のメッセージ。
+            スコアが100点以上の場合：素晴らしい！君は開拓の星だ！という最高の賛辞のメッセージ。
+            
+            上記例のような口調で、2文程度でメッセージを作成してください。`;
+
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // Canvas環境では自動的に提供されるため空文字列
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                throw new Error("Failed to get response from LLM.");
+            }
+            */
+            // --- LLM API呼び出し部分ここまで ---
+        }
+
+        // ゲームオーバー処理
+        async function gameOver() { // asyncキーワードを追加
+            gameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+            // スコア登録はボタンクリック時に行うため、ここでは保存しない
+            // await saveScoreToFirestore(score); // この行は削除
+            // BGMは停止しない (ゲームタブを閉じるまでループ)
+
+            // LLMでメッセージを生成する前にローディング表示
+            showMessage("✨メッセージ生成中...✨", 'loading'); // ローディング中はボタンなし
+
+            try {
+                const generatedMessage = await generateGameOverMessage(score);
+                showMessage(`ゲームオーバー！あなたのスコアは ${score} です！\n\n${generatedMessage}`, 'gameOver'); // ゲームオーバーメッセージを表示
+            } catch (error) {
+                console.error("Error generating game over message:", error);
+                showMessage(`ゲームオーバー！あなたのスコアは ${score} です！\nメッセージ生成に失敗しました。`, 'gameOver');
+            }
+
+            startButton.classList.add('hidden');
+            // restartButtonとassistButtonは常にhiddenなので、表示/非表示の切り替えは不要
+            // restartButton.classList.remove('hidden'); // これは削除
+            assistButton.disabled = true; // ゲームオーバー時はお助けキャラボタンを無効化
+        }
+
+        // ゲーム開始
+        function startGame() {
+            if (!imagesLoaded) {
+                showMessage("画像を読み込み中です。しばらくお待ちください...", 'loading');
+                return;
+            }
+            if (gameRunning) return;
+            gameRunning = true;
+            startButton.classList.add('hidden');
+            // restartButtonとassistButtonは常にhiddenなので、表示/非表示の切り替えは不要
+            // restartButton.classList.add('hidden'); // これは削除
+            assistButton.disabled = false; // ゲーム開始時にお助けキャラボタンを有効化
+            animationFrameId = requestAnimationFrame(gameLoop);
+            // BGMがオンの場合のみ再生を試みる
+            if (isBGMOn) {
+                gameBGM.play().catch(e => console.error("BGM再生エラー:", e));
+            }
+        }
+
+        // --- Firebase関連の関数 ---
+        async function initializeFirebase() {
+            try {
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // 認証状態の変更をリッスン
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("[DEBUG] Firebase authenticated. User ID:", userId);
+                    } else {
+                        // 認証トークンがあればカスタム認証、なければ匿名認証
+                        try {
+                            const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                            if (token) {
+                                await signInWithCustomToken(auth, token);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                            userId = auth.currentUser?.uid || crypto.randomUUID(); // 匿名認証失敗時のフォールバック
+                            console.log("[DEBUG] Firebase signed in anonymously. User ID:", userId);
+                        } catch (error) {
+                            console.error("[ERROR] Anonymous sign-in failed:", error);
+                            userId = crypto.randomUUID(); // 全ての認証失敗時のフォールバック
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("[ERROR] Firebase initialization failed:", error);
+                // ローカル開発環境でのフォールバック
+                console.warn("[WARN] Running without Firebase. Score saving/loading will not work.");
+            }
+        }
+
+        // スコアをFirestoreに保存する関数 (プレイヤー名を引数に追加)
+        async function saveScoreToFirestore(score, playerName) {
+            if (!db || !userId) { // userIdが認証されていない場合も保存しない
+                console.warn("[WARN] Firestore not initialized or user not authenticated. Score not saved.");
+                return;
+            }
+            try {
+                const scoresCollectionRef = collection(db, `artifacts/${appId}/public/data/scores`);
+                await addDoc(scoresCollectionRef, {
+                    userId: userId,
+                    playerName: playerName || "名無しプレイヤー", // 名前がない場合はデフォルト名
+                    score: score,
+                    timestamp: serverTimestamp()
+                });
+                console.log("[DEBUG] Score saved to Firestore:", score, "by", playerName);
+            } catch (error) {
+                console.error("[ERROR] Failed to save score to Firestore:", error);
+            }
+        }
+
+        // Firestoreからランキングを読み込み表示する関数
+        async function loadAndDisplayRanking() {
+            if (!db) {
+                rankingList.innerHTML = "<p>ランキングの読み込みに失敗しました。</p>";
+                console.warn("[WARN] Firestore not initialized. Cannot load ranking.");
+                rankingBox.style.display = 'block'; // エラーでもボックスは表示
+                return;
+            }
+
+            rankingList.innerHTML = "<p>読み込み中...</p>"; // ローディングメッセージを表示
+            rankingBox.style.display = 'block'; // ランキングボックスを表示
+
+            try {
+                const scoresCollectionRef = collection(db, `artifacts/${appId}/public/data/scores`);
+                const q = query(scoresCollectionRef, orderBy("score", "desc"), limit(10)); // スコアの高い順にトップ10を取得
+                const querySnapshot = await getDocs(q);
+
+                let rankingHtml = "";
+                if (querySnapshot.empty) {
+                    rankingHtml = "<p>まだスコアがありません。</p>";
+                } else {
+                    rankingHtml = "<ol class='list-decimal list-inside'>";
+                    querySnapshot.forEach((doc, index) => {
+                        const data = doc.data();
+                        const isCurrentUser = data.userId === userId ? " (あなた)" : "";
+                        rankingHtml += `<li class="mb-1"> ${index + 1}. ${data.playerName || "名無しプレイヤー"} : ${data.score} 点${isCurrentUser}</li>`;
+                    });
+                    rankingHtml += "</ol>";
+                }
+                rankingList.innerHTML = rankingHtml;
+            } catch (error) {
+                console.error("[ERROR] Failed to load ranking from Firestore:", error);
+                rankingList.innerHTML = "<p>ランキングの読み込み中にエラーが発生しました。</p>";
+            }
+        }
+        // --- Firebase関連の関数ここまで ---
+
+
+        // イベントリスナー
+        window.addEventListener('load', async () => {
+            console.log("[DEBUG] window.load event fired.");
+            startButton.disabled = true; // ボタンを最初から無効化
+            assistButton.disabled = true; // お助けキャラボタンも最初から無効化
+            showRankingButton.disabled = true; // ランキングボタンも最初から無効化
+            showMessage("✨画像を読み込み中...✨", 'loading'); // ローディングメッセージを表示
+
+            // Firebase初期化と画像読み込みを並行して行う
+            await Promise.all([
+                initializeFirebase(),
+                new Promise(resolve => {
+                    // 画像読み込み完了またはタイムアウトで解決
+                    const checkImages = () => {
+                        if (imagesLoaded) {
+                            console.log("[DEBUG] Images loaded via promise.");
+                            resolve();
+                        } else {
+                            setTimeout(checkImages, 100); // 少し待って再チェック
+                        }
+                    };
+                    checkImages();
+
+                    // タイムアウトを設定
+                    imageLoadTimeout = setTimeout(() => {
+                        if (!imagesLoaded) {
+                            console.warn("[WARN] Image loading timed out. Proceeding with fallback.");
+                            imagesLoaded = true; // 強制的に画像を読み込み済みとする
+                            resolve(); // タイムアウトでも解決
+                        }
+                    }, 5000); // 5秒後にタイムアウト
+                })
+            ]);
+
+            console.log("[DEBUG] All initial async operations completed.");
+
+            // すべての初期化が完了したらメッセージボックスを閉じる
+            messageBox.style.display = 'none';
+            startButton.disabled = false; // ボタンを有効化
+            showRankingButton.disabled = false; // ランキングボタンを有効化
+
+            resizeCanvas(); // キャンバスの初期サイズ設定
+            resetGame(); // ゲームの初期化
+            gameBGM.volume = currentVolume; // 初期音量を設定
+            console.log("[DEBUG] Game fully initialized and ready.");
+            // 最後にユーザーへのReadyメッセージを表示
+            showMessage("操作方法：\n\n【PC】\n左右移動：矢印キー左右 または A/Dキー\nお助けキャラ召喚：スペースキー\nゲーム開始/再開：スペースキー\nBGMオンオフ切り替え：Mキー\n\n【スマホ】\n左右移動：画面をスライド\nお助けキャラ召喚：画面をタップ\nゲーム開始/再開：画面をタップ\nBGMオンオフ切り替え：右上のアイコンをタップ\n\n※注意！BGMが流れます！\n\nスペースキー または 画面をタップしてゲームスタート！\n\nスコアランキングを見るには「スコアランキングを見る」ボタンを押してね！\nゲームオーバー後にはスコアを登録できるよ！", 'initial_start'); // メッセージとタイプを変更
+            updateInfo(); // BGMステータスを初期表示
+        });
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            // draw()はresizeCanvas内で呼ばれるため、ここでは不要
+        });
+
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', () => {
+            messageBox.style.display = 'none'; // クリックでメッセージボックスを非表示に
+            resetGame();
+            startGame();
+        });
+        // assistButton.addEventListener('click', callAssistCharacter); // ボタンがhiddenになるため、クリックイベントはキーボードに集約
+
+        // BGMコントロールアイコンのクリックイベント
+        bgmControl.addEventListener('click', () => {
+            isBGMOn = !isBGMOn;
+            if (isBGMOn) {
+                gameBGM.play().catch(error => console.error("BGM再生エラー:", error));
+            } else {
+                gameBGM.pause();
+            }
+            updateInfo(); // BGMステータス表示とアイコンを更新
+        });
+
+        // スコアランキングボタンのイベントリスナー
+        showRankingButton.addEventListener('click', loadAndDisplayRanking);
+        closeRankingButton.addEventListener('click', () => {
+            rankingBox.style.display = 'none';
+        });
+
+        // スコア登録ボタンのイベントリスナー
+        registerScoreButton.addEventListener('click', () => {
+            messageBox.style.display = 'none'; // ゲームオーバーメッセージボックスを隠す
+            nameInputBox.style.display = 'block'; // 名前入力ボックスを表示
+            playerNameInput.value = ""; // 入力欄をクリア
+            playerNameInput.focus(); // 入力欄にフォーカス
+        });
+
+        // 名前登録ボタンのイベントリスナー
+        submitNameButton.addEventListener('click', async () => {
+            const playerName = playerNameInput.value.trim();
+            if (playerName.length > 0) {
+                await saveScoreToFirestore(score, playerName);
+                nameInputBox.style.display = 'none'; // 名前入力ボックスを隠す
+                loadAndDisplayRanking(); // ランキングを再読み込みして表示
+            } else {
+                showMessage("名前を入力してください！", 'info');
+            }
+        });
+
+
+        // キーボード操作 (丹恒)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault(); // スペースキーによるスクロールを防止
+
+                if (!gameRunning) {
+                    // ゲームがまだ始まっていない、またはゲームオーバー状態の場合
+                    if (imagesLoaded) { // 画像が読み込み済みの場合のみ
+                        messageBox.style.display = 'none'; // メッセージボックスを非表示に
+                        resetGame(); // ゲームの状態をリセット
+                        startGame(); // ゲームを開始
+                    }
+                } else {
+                    // ゲームが実行中の場合
+                    callAssistCharacter(); // お助けキャラ召喚
+                }
+            } else if (e.key === 'm' || e.key === 'M') { // 'M'キーでBGMをトグル (PC用)
+                isBGMOn = !isBGMOn;
+                if (isBGMOn) {
+                    gameBGM.play().catch(error => console.error("BGM再生エラー:", error));
+                } else {
+                    gameBGM.pause();
+                }
+                updateInfo(); // BGMステータス表示とアイコンを更新
+            }
+
+            if (gameRunning) { // ゲームが実行中の場合のみ移動キーを処理
+                // 矢印キーとWASDキーがブラウザのスクロールを妨げるようにする
+                if (['ArrowLeft', 'ArrowRight', 'a', 'd'].includes(e.key)) {
+                    e.preventDefault();
+                }
+                pressedKeys[e.key] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (!gameRunning) return; // ゲームが実行中でない場合は何もしない
+            pressedKeys[e.key] = false;
+        });
+
+        // タッチ操作 (丹恒)
+        let touchStartX = 0;
+        let danHengInitialX = 0;
+        let touchStartTime = 0;
+        const tapThreshold = 200; // ms
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (!gameRunning) {
+                // ゲームがまだ始まっていない、またはゲームオーバー状態の場合
+                if (imagesLoaded) { // 画像が読み込み済みの場合のみ
+                    messageBox.style.display = 'none'; // メッセージボックスを非表示に
+                    resetGame(); // ゲームの状態をリセット
+                    startGame(); // ゲームを開始
+                }
+                return; // ゲーム開始後は以下のタッチ移動処理へ
+            }
+            e.preventDefault(); // デフォルトのスクロールなどを防ぐ
+            touchStartX = e.touches[0].clientX;
+            danHengInitialX = danHeng.x;
+            touchStartTime = new Date().getTime(); // タップ判定用に時間記録
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!gameRunning) return;
+            e.preventDefault();
+            const touchCurrentX = e.touches[0].clientX;
+            const deltaX = touchCurrentX - touchStartX;
+            danHeng.x = danHengInitialX + deltaX;
+
+            // 画面端での制限
+            if (danHeng.x < 0) danHeng.x = 0;
+            if (danHeng.x + danHeng.width > canvas.width) danHeng.x = canvas.width - danHeng.width;
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (!gameRunning) return;
+            const touchEndTime = new Date().getTime();
+            const touchDuration = touchEndTime - touchStartTime;
+            const touchEndX = e.changedTouches[0].clientX;
+
+            // タップ判定 (短時間のタッチで移動量が少ない場合)
+            if (touchDuration < tapThreshold && Math.abs(touchEndX - touchStartX) < 10) { // 10pxは許容範囲
+                callAssistCharacter(); // お助けキャラ召喚
+            }
+        });
+    </script>
+</body>
+</html>
