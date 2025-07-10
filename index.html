@@ -418,9 +418,14 @@
         };
         assistCharacter.image.src = "./assist_char.png"; // HTMLファイルと同じディレクトリにあるassist_char.pngを読み込む
 
+        // 星玉の画像定義
+        const jadeImage = new Image();
+        // 例: jadeImage.src = "./my_stellar_jade.png";
+        jadeImage.src = "./my_stellar_jade.png"; // 仮のURL
+
         // 画像の読み込み完了を待つ
         let loadedImagesCount = 0;
-        const totalImagesToLoad = 3; // 丹恒、星ちゃん、お助けキャラの3枚
+        const totalImagesToLoad = 4; // 丹恒、星ちゃん、お助けキャラ、星玉の4枚
         let imageLoadTimeout; // タイムアウトIDを保持する変数
 
         // 画像が一つ読み込まれた、またはエラーになった時の処理
@@ -438,6 +443,7 @@
         danHeng.image.onload = handleImageLoadComplete;
         hoshino.image.onload = handleImageLoadComplete;
         assistCharacter.image.onload = handleImageLoadComplete; // お助けキャラの画像ロードハンドラ
+        jadeImage.onload = handleImageLoadComplete; // 星玉の画像ロードハンドラ
         danHeng.image.onerror = () => {
             console.error("[ERROR] Failed to load Dan Heng image. Using fallback.");
             handleImageLoadComplete(); // エラーでもカウントを進める
@@ -448,6 +454,10 @@
         };
         assistCharacter.image.onerror = () => {
             console.error("[ERROR] Failed to load Assist Character image. Using fallback.");
+            handleImageLoadComplete(); // エラーでもカウントを進める
+        };
+        jadeImage.onerror = () => {
+            console.error("[ERROR] Failed to load Jade image. Using fallback.");
             handleImageLoadComplete(); // エラーでもカウントを進める
         };
 
@@ -550,21 +560,28 @@
                 }
             }
 
-            // 星玉を描画 (ダイヤモンドの形)
-            stellarJades.forEach(jade => {
-                ctx.fillStyle = '#ADD8E6'; // 明るい青色
-                ctx.beginPath();
-                // ダイヤモンドの頂点
-                ctx.moveTo(jade.x + jadeSize / 2, jade.y); // 上
-                ctx.lineTo(jade.x + jadeSize, jade.y + jadeSize / 2); // 右
-                ctx.lineTo(jade.x + jadeSize / 2, jade.y + jadeSize); // 下
-                ctx.lineTo(jade.x, jade.y + jadeSize / 2); // 左
-                ctx.closePath();
-                ctx.fill();
-                ctx.strokeStyle = '#87CEEB'; // 枠線の色
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            });
+            // 星玉を描画 (画像)
+            if (jadeImage.complete && jadeImage.naturalWidth !== 0) {
+                stellarJades.forEach(jade => {
+                    ctx.drawImage(jadeImage, jade.x, jade.y, jadeSize, jadeSize);
+                });
+            } else {
+                // 画像が読み込まれていない場合のフォールバック（以前のダイヤモンド形状）
+                stellarJades.forEach(jade => {
+                    ctx.fillStyle = '#ADD8E6'; // 明るい青色
+                    ctx.beginPath();
+                    // ダイヤモンドの頂点
+                    ctx.moveTo(jade.x + jadeSize / 2, jade.y); // 上
+                    ctx.lineTo(jade.x + jadeSize, jade.y + jadeSize / 2); // 右
+                    ctx.lineTo(jade.x + jadeSize / 2, jade.y + jadeSize); // 下
+                    ctx.lineTo(jade.x, jade.y + jadeSize / 2); // 左
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = '#87CEEB'; // 枠線の色
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+            }
         }
 
 
