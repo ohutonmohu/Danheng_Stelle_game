@@ -423,8 +423,8 @@
         const assistCharacter = {
             x: 0,
             y: 0,
-            width: 70,
-            height: 70,
+            width: 70, // 初期値（PC基準）
+            height: 70, // 初期値（PC基準）
             speed: 10, // お助けキャラの移動速度
             direction: 1, // 移動方向 (1:右, -1:左)
             image: new Image(),
@@ -521,6 +521,8 @@
             registerScoreButton.classList.add('hidden'); // スコア登録ボタンもデフォルトで隠す
             messageBoxButton.onclick = null; // 以前のクリックハンドラをクリア
 
+            const isMobile = window.innerWidth <= 768; // モバイル判定
+
             if (type === 'loading') {
                 // ローディング中はボタンを隠したまま
             } else if (type === 'info') {
@@ -532,7 +534,11 @@
                 }, 2000); // 2000ミリ秒 = 2秒
             } else if (type === 'gameOver') {
                 messageBoxButton.classList.remove('hidden'); // OKボタンを表示
-                messageBoxButton.textContent = "(スペースキーでもう一度)"; // テキストを更新
+                if (isMobile) {
+                    messageBoxButton.textContent = "背景をタップでもう一度"; // スマホ版のゲームオーバーメッセージ
+                } else {
+                    messageBoxButton.textContent = "(スペースキーでもう一度)"; // PC版のゲームオーバーメッセージ
+                }
                 messageBoxButton.onclick = () => {
                     messageBox.style.display = 'none'; // メッセージボックスを非表示に
                     resetGame();
@@ -541,7 +547,6 @@
                 registerScoreButton.classList.remove('hidden'); // スコア登録ボタンを表示
             } else if (type === 'initial_start') {
                 // デバイスを判定してメッセージを切り替える
-                const isMobile = window.innerWidth <= 768; // 幅でモバイルを判定
                 const isPortrait = window.innerHeight > window.innerWidth; // 縦向きを判定
 
                 let initialMessage = "";
@@ -654,9 +659,14 @@
             assistCallsDisplay.textContent = `お助け: ${assistCalls} / ${maxAssistCalls}`; // お助けキャラの召喚回数を更新
             
             // 新しいヒントの追加
+            const isMobile = window.innerWidth <= 768; // モバイル判定
             const assistKeyHint = document.getElementById('assistKeyHint');
             if (gameRunning) {
-                assistKeyHint.textContent = `スペースキー：お助けキャラを召喚`;
+                if (isMobile) {
+                    assistKeyHint.textContent = `画面タップ：お助けキャラを召喚`; // スマホ版のヒント
+                } else {
+                    assistKeyHint.textContent = `スペースキー：お助けキャラを召喚`; // PC版のヒント
+                }
             } else {
                 assistKeyHint.textContent = ''; // ゲーム中でない場合は非表示
             }
@@ -714,6 +724,9 @@
             const originalDanHengHeight = 80;
             const originalHoshinoWidth = 90;
             const originalHoshinoHeight = 90;
+            const originalAssistCharacterWidth = 70; // お助けキャラのオリジナルサイズ
+            const originalAssistCharacterHeight = 70; // お助けキャラのオリジナルサイズ
+
 
             // 基準となるキャンバス幅（この幅でoriginalサイズが適用されると仮定）
             const referenceCanvasWidth = 800;
@@ -729,6 +742,9 @@
             danHeng.height = originalDanHengHeight * overallCanvasScale;
             hoshino.width = originalHoshinoWidth * overallCanvasScale;
             hoshino.height = originalHoshinoHeight * overallCanvasScale;
+            assistCharacter.width = originalAssistCharacterWidth * overallCanvasScale;
+            assistCharacter.height = originalAssistCharacterHeight * overallCanvasScale;
+
 
             // モバイル縦画面の場合、さらに縮小
             if (isMobilePortrait) {
@@ -736,6 +752,8 @@
                 danHeng.height *= mobileCharacterReductionFactor;
                 hoshino.width *= mobileCharacterReductionFactor;
                 hoshino.height *= mobileCharacterReductionFactor;
+                assistCharacter.width *= mobileCharacterReductionFactor; // お助けキャラも縮小
+                assistCharacter.height *= mobileCharacterReductionFactor; // お助けキャラも縮小
             }
 
             // キャラクターの位置を再計算
