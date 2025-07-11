@@ -8,7 +8,15 @@
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Interフォントを優先的に使用 */
+        /* htmlとbodyが画面いっぱいに広がるように設定 */
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* スクロールバーが表示されないように */
+        }
+
         body {
             font-family: "Inter", sans-serif;
             background-color: #1a1a2e; /* 宇宙っぽい暗い背景 */
@@ -16,11 +24,7 @@
             display: flex;
             flex-direction: column; /* 垂直方向に並べる */
             align-items: center; /* 水平方向中央寄せ */
-            justify-content: center; /* 垂直方向中央寄せ */
-            width: 100vw; /* 画面幅いっぱいに */
-            height: 100vh; /* 画面高さいっぱいに */
-            margin: 0;
-            overflow: hidden; /* スクロールバーが出ないように */
+            justify-content: center; /* コンテンツ全体を垂直方向中央寄せ */
         }
 
         .game-container {
@@ -29,20 +33,20 @@
             box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.5); /* 影 */
             padding: 1.5rem;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center; /* コンテナ内の要素を中央に */
+            flex-direction: column; /* コンテナ内の要素を垂直方向に並べる */
+            align-items: center; /* コンテナ内の要素を水平方向中央寄せ */
+            justify-content: flex-start; /* コンテナ内の要素を上部に寄せる（キャンバスがflex-growするため） */
             width: 100%; /* 親要素 (body) の幅いっぱいに */
             height: 100%; /* 親要素 (body) の高さいっぱいに */
+            max-width: 800px; /* PCでの最大幅を制限 */
+            max-height: 90vh; /* PCでの最大高さを制限（フッターなどスペース確保のため） */
             box-sizing: border-box; /* パディングを幅に含める */
-            max-width: none; /* 以前の制限を解除 */
-            max-height: none; /* 以前の制限を解除 */
             position: relative; /* BGMクレジットの配置のために追加 */
         }
 
         canvas {
             /* 背景画像の設定 */
-            background-image: url('./background.png'); /* ローカルの背景画像パス */
+            background-image: url('./background.png');
             background-size: cover; /* キャンバス全体を覆うように拡大・縮小 */
             background-position: center; /* 画像を中央に配置 */
             background-repeat: no-repeat; /* 画像を繰り返さない */
@@ -51,11 +55,13 @@
             border: 2px solid #5a5a7a; /* 枠線 */
             border-radius: 0.75rem; /* キャンバスの角も丸く */
             display: block;
-            /* widthとheightはJavaScriptで動的に設定するため、CSSからは削除 */
-            touch-action: none; /* タッチイベントのデフォルト動作を無効化 */
+            flex-grow: 1; /* 残りの垂直スペースを埋める */
+            width: 100%; /* 親要素の幅いっぱいに広がる */
+            height: auto; /* 高さは内容に合わせて自動調整 */
             object-fit: contain; /* アスペクト比を維持しつつ、コンテナに収まるように */
-            max-width: 100%;
-            max-height: 100%;
+            touch-action: none; /* タッチイベントのデフォルト動作を無効化 */
+            margin-top: 1rem; /* 上下の余白 */
+            margin-bottom: 1rem; /* 上下の余白 */
         }
 
         /* ゲーム情報とコントロールの配置を調整 */
@@ -215,74 +221,6 @@
             background-color: #9932cc; /* ホバー時の色 */
         }
 
-        /* レスポンシブ調整 */
-        @media (max-width: 768px) { /* タブレットおよびそれ以下の画面幅 */
-            h1 {
-                font-size: 2.5rem; /* タイトルを少し小さく */
-            }
-            .game-info div { /* スコア、ミス、お助け回数 */
-                font-size: 1.1rem;
-            }
-            .game-button {
-                padding: 0.8rem 1.6rem;
-                font-size: 1rem;
-            }
-            .game-controls {
-                flex-direction: column; /* ボタンを縦並びに */
-                width: 100%;
-                align-items: center;
-            }
-            #bgmControl {
-                font-size: 2rem;
-                width: 3rem;
-                height: 3rem;
-            }
-            .message-box {
-                padding: 1.5rem;
-                font-size: 1.2rem;
-            }
-            #nameInputBox input[type="text"] {
-                padding: 0.6rem;
-                font-size: 1rem;
-            }
-        }
-
-        @media (max-width: 480px) { /* スマートフォンなど、より小さな画面幅 */
-            h1 {
-                font-size: 2rem; /* タイトルをさらに小さく */
-                margin-bottom: 1rem;
-            }
-            .game-info div {
-                font-size: 1rem;
-            }
-            .game-button {
-                padding: 0.75rem 1.2rem;
-                font-size: 0.9rem;
-                margin: 0.3rem; /* ボタン間の余白を減らす */
-            }
-            .message-box {
-                width: 95%; /* 非常に小さな画面では幅を広げる */
-                padding: 1rem;
-                font-size: 1rem;
-            }
-            #rankingList li {
-                font-size: 0.9rem;
-            }
-            #nameInputBox {
-                padding: 1.5rem;
-            }
-            #nameInputBox input[type="text"] {
-                width: calc(100% - 1.5rem); /* 入力フィールドの幅を調整 */
-                padding: 0.5rem;
-                font-size: 0.9rem;
-            }
-            .register-button-style {
-                font-size: 1rem;
-                padding: 0.8rem 1.5rem;
-                margin-top: 1rem;
-            }
-        }
-
         /* BGMクレジットのスタイル */
         #bgmCredit {
             position: absolute;
@@ -291,6 +229,58 @@
             font-size: 0.7rem; /* 小さなフォントサイズ */
             color: rgba(224, 224, 224, 0.5); /* 半透明の文字色 */
             z-index: 10; /* 他の要素の下に隠れないように */
+        }
+
+        /* レスポンシブ調整 */
+        @media (max-width: 768px) { /* タブレットおよびそれ以下の画面幅 */
+            .game-container {
+                padding: 0.5rem; /* パディングを減らす */
+                max-width: 100%; /* モバイルでは幅制限を解除 */
+                max-height: 100vh; /* モバイルでは高さ制限を解除 */
+            }
+            .game-info, .game-controls {
+                margin-top: 0.5rem; /* 余白を減らす */
+                margin-bottom: 0.5rem; /* 余白を減らす */
+            }
+            canvas {
+                margin-top: 0.5rem;
+                margin-bottom: 0.5rem;
+            }
+            /* フォントサイズをさらに小さく */
+            h1 {
+                font-size: 2rem;
+            }
+            .game-info div {
+                font-size: 0.9rem;
+            }
+            .game-button {
+                padding: 0.6rem 1rem;
+                font-size: 0.8rem;
+                margin: 0.2rem;
+            }
+            #bgmControl {
+                font-size: 1.8rem;
+                width: 2.8rem;
+                height: 2.8rem;
+            }
+            .message-box {
+                padding: 1rem;
+                font-size: 1rem;
+            }
+            #nameInputBox input[type="text"] {
+                padding: 0.4rem;
+                font-size: 0.9rem;
+            }
+            .register-button-style {
+                font-size: 1rem;
+                padding: 0.7rem 1.2rem;
+                margin-top: 0.8rem;
+            }
+            #bgmCredit {
+                font-size: 0.6rem;
+                bottom: 0.2rem;
+                left: 0.2rem;
+            }
         }
     </style>
 </head>
@@ -398,8 +388,8 @@
         const danHeng = {
             x: 0,
             y: 0,
-            width: 80, // サイズを大きく
-            height: 80, // サイズを大きく
+            width: 80, // 初期値（PC基準）
+            height: 80, // 初期値（PC基準）
             speed: 16, // 丹恒の移動速度
             image: new Image()
         };
@@ -408,8 +398,8 @@
         const hoshino = {
             x: 0,
             y: 0,
-            width: 90, // サイズを大きく
-            height: 90, // サイズを大きく
+            width: 90, // 初期値（PC基準）
+            height: 90, // 初期値（PC基準）
             speed: 3,
             direction: 1, // 1:右, -1:左
             image: new Image()
@@ -475,7 +465,8 @@
 
 
         const stellarJades = [];
-        const jadeSize = 30;
+        const jadeSize = 30; // 星玉のサイズは固定で、必要に応じてCSSやJSで調整
+
         let jadeSpawnInterval = 1000; // ms (難易度によって変動)
         let lastJadeSpawnTime = 0;
 
@@ -536,12 +527,13 @@
                 registerScoreButton.classList.remove('hidden'); // スコア登録ボタンを表示
             } else if (type === 'initial_start') {
                 // デバイスを判定してメッセージを切り替える
-                const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+                const isMobile = window.innerWidth <= 768; // 幅でモバイルを判定
+                const isPortrait = window.innerHeight > window.innerWidth; // 縦向きを判定
 
                 let initialMessage = "";
-                if (isMobile) {
+                if (isMobile && isPortrait) { // スマホの縦画面
                     initialMessage = `操作方法：\n\n【スマホ】\n左右移動：画面をスライド\nお助けキャラ召喚：画面をタップ\nゲーム開始/再開：画面をタップ\nBGMオンオフ切り替え：右上のアイコンをタップ\n\n※注意！BGMが流れます！\n\n画面をタップしてゲームスタート！\n\nスコアランキングを見るには「スコアランキングを見る」ボタンを押してね！\nゲームオーバー後にはスコアを登録できるよ！`;
-                } else {
+                } else { // PCまたはスマホの横画面
                     initialMessage = `操作方法：\n\n【PC】\n左右移動：矢印キー左右 または A/Dキー\nお助けキャラ召喚：スペースキー\nゲーム開始/再開：スペースキー\nBGMオンオフ切り替え：Mキー\n\n※注意！BGMが流れます！\n\nスペースキー または 画面をタップしてゲームスタート！\n\nスコアランキングを見るには「スコアランキングを見る」ボタンを押してね！\nゲームオーバー後にはスコアを登録できるよ！`;
                 }
                 messageText.innerHTML = initialMessage.replace(/\n/g, '<br>');
@@ -626,11 +618,16 @@
             restartButton.classList.add('hidden');
             assistButton.disabled = false; // お助けキャラボタンを有効化
             assistCharacter.active = false; // お助けキャラを非アクティブに
+            
+            // キャラクターの位置をリセットする前にサイズを再計算
+            resizeCanvas(); // これでdanHengとhoshinoのサイズとy座標が更新される
+
             // 丹恒と星ちゃんの初期位置をリセット
             danHeng.x = (canvas.width - danHeng.width) / 2;
-            danHeng.y = canvas.height - danHeng.height - 10; // リセット時にも位置を再計算
+            // danHeng.y は resizeCanvas で既に計算されているので、ここでは変更しない
             hoshino.x = (canvas.width - hoshino.width) / 2;
-            hoshino.y = canvas.height - hoshino.height - danHeng.height - 20; // リセット時にも位置を再計算
+            // hoshino.y は resizeCanvas で既に計算されているので、ここでは変更しない
+
             draw(); // 初期状態を描画
             pressedKeys = {}; // キーの状態をリセット
             // BGMは停止しない (ゲームタブを閉じるまでループ)
@@ -686,58 +683,55 @@
 
         // キャンバスとキャラクターのサイズを調整
         function resizeCanvas() {
-            const gameContainer = document.querySelector('.game-container');
-            const h1 = document.querySelector('h1');
-            const gameInfo = document.getElementById('game-info');
-            const gameControls = document.getElementById('game-controls');
+            // まず、CSSによって表示されているcanvasの実際のサイズを取得
+            const computedCanvasStyle = getComputedStyle(canvas);
+            const displayWidth = parseFloat(computedCanvasStyle.width);
+            const displayHeight = parseFloat(computedCanvasStyle.height);
 
-            // コンテナの利用可能な幅と高さ
-            const containerWidth = gameContainer.clientWidth;
-            const containerHeight = gameContainer.clientHeight;
+            // canvasの描画バッファサイズを、表示サイズに合わせる
+            canvas.width = displayWidth;
+            canvas.height = displayHeight;
 
-            // UI要素の合計高さ（マージンやパディングも考慮）
-            const getElementHeightWithMargin = (element) => {
-                if (!element) return 0;
-                const style = getComputedStyle(element);
-                return element.offsetHeight + parseFloat(style.marginTop) + parseFloat(style.marginBottom);
-            };
+            // モバイルの縦画面かどうかを判定
+            const isMobilePortrait = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
 
-            const uiElementsHeight = getElementHeightWithMargin(h1) +
-                                     getElementHeightWithMargin(gameInfo) +
-                                     getElementHeightWithMargin(gameControls);
+            // キャラクターの基準サイズ（PCデスクトップでの理想的なサイズ）
+            const originalDanHengWidth = 80;
+            const originalDanHengHeight = 80;
+            const originalHoshinoWidth = 90;
+            const originalHoshinoHeight = 90;
 
-            // キャンバスが利用できる領域
-            const availableCanvasWidth = containerWidth - parseFloat(getComputedStyle(gameContainer).paddingLeft) - parseFloat(getComputedStyle(gameContainer).paddingRight);
-            const availableCanvasHeight = containerHeight - uiElementsHeight - parseFloat(getComputedStyle(gameContainer).paddingTop) - parseFloat(getComputedStyle(gameContainer).paddingBottom);
+            // 基準となるキャンバス幅（この幅でoriginalサイズが適用されると仮定）
+            const referenceCanvasWidth = 800;
 
-            const targetAspectRatio = 16 / 9;
-            let newCanvasWidth;
-            let newCanvasHeight;
+            // 現在のキャンバス幅に対する全体的なスケールファクター
+            const overallCanvasScale = canvas.width / referenceCanvasWidth;
 
-            if (availableCanvasWidth / availableCanvasHeight > targetAspectRatio) {
-                // 利用可能な領域が目標より横長の場合、高さを基準に幅を計算
-                newCanvasHeight = availableCanvasHeight;
-                newCanvasWidth = availableCanvasHeight * targetAspectRatio;
-            } else {
-                // 利用可能な領域が目標より縦長または同じ場合、幅を基準に高さを計算
-                newCanvasWidth = availableCanvasWidth;
-                newCanvasHeight = availableCanvasWidth / targetAspectRatio;
+            // モバイル縦画面時の追加縮小率
+            const mobileCharacterReductionFactor = 0.6; // 40%縮小
+
+            // 最終的なキャラクターサイズを計算
+            danHeng.width = originalDanHengWidth * overallCanvasScale;
+            danHeng.height = originalDanHengHeight * overallCanvasScale;
+            hoshino.width = originalHoshinoWidth * overallCanvasScale;
+            hoshino.height = originalHoshinoHeight * overallCanvasScale;
+
+            // モバイル縦画面の場合、さらに縮小
+            if (isMobilePortrait) {
+                danHeng.width *= mobileCharacterReductionFactor;
+                danHeng.height *= mobileCharacterReductionFactor;
+                hoshino.width *= mobileCharacterReductionFactor;
+                hoshino.height *= mobileCharacterReductionFactor;
             }
 
-            // キャンバスの描画バッファサイズを設定
-            canvas.width = newCanvasWidth;
-            canvas.height = newCanvasHeight;
-
-            // キャンバスの表示サイズをCSSで設定 (object-fit: contain; と合わせて使う)
-            canvas.style.width = `${newCanvasWidth}px`;
-            canvas.style.height = `${newCanvasHeight}px`;
-
-            // キャラクターの初期位置を再計算
+            // キャラクターの位置を再計算
             danHeng.x = (canvas.width - danHeng.width) / 2;
-            danHeng.y = canvas.height - danHeng.height - 10;
+            // 丹恒を画面下部に配置。モバイル縦画面では少し底に近づける
+            danHeng.y = canvas.height - danHeng.height - (isMobilePortrait ? 5 : 10);
 
             hoshino.x = (canvas.width - hoshino.width) / 2;
-            hoshino.y = canvas.height - hoshino.height - danHeng.height - 20;
+            // 星ちゃんを丹恒の上に配置。モバイル縦画面では丹恒からの距離を少し縮める
+            hoshino.y = danHeng.y - hoshino.height - (isMobilePortrait ? 10 : 20);
 
             draw(); // リサイズ後に再描画
         }
@@ -1106,7 +1100,7 @@
             startButton.disabled = false; // ボタンを有効化
             showRankingButton.disabled = false; // ランキングボタンを有効化
 
-            resizeCanvas(); // キャンバスの初期サイズ設定
+            resizeCanvas(); // キャンバスの初期サイズ設定とキャラクターサイズ調整
             resetGame(); // ゲームの初期化
             gameBGM.volume = currentVolume; // 初期音量を設定
             console.log("[DEBUG] Game fully initialized and ready.");
