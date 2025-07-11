@@ -372,7 +372,7 @@
 
     <!-- 名前入力ボックス -->
     <div id="nameInputBox">
-        <h2 class="text-2xl font-bold mb-4">名前を入力してください</h2>
+        <h2 class="2xl font-bold mb-4">名前を入力してください</h2>
         <input type="text" id="playerNameInput" placeholder="あなたの名前" maxlength="15">
         <button id="submitNameButton" class="game-button">登録</button>
     </div>
@@ -452,7 +452,7 @@
             y: 0,
             width: 70, // 初期値（PC基準）
             height: 70, // 初期値（PC基準）
-            speed: 10, // 大地獣の移動速度
+            speed: 3, // 大地獣の移動速度を遅くする
             direction: 1, // 移動方向 (1:右, -1:左)
             image: new Image(),
             active: false, // 現在活動中か
@@ -511,8 +511,8 @@
         let jadeSpawnInterval = 1000; // ms (難易度によって変動)
         let lastJadeSpawnTime = 0;
 
-        let daichijuuCalls = 5; // 大地獣の初期召喚回数
-        const maxDaichijuuCalls = 5; // 大地獣の最大召喚回数
+        let daichijuuCalls; // 大地獣の初期召喚回数 (動的に設定するためletに変更)
+        let maxDaichijuuCalls; // 大地獣の最大召喚回数 (動的に設定するためletに変更)
         const daichijuuRecoveryPoints = 100; // 100点ごとに1回回復
         let scoreMilestone = 0; // 次の回復までのスコア基準点
         let infoMessageTimeoutId = null; // メッセージ自動消去用のタイマーID
@@ -648,7 +648,12 @@
         function resetGame() {
             score = 0;
             lives = maxLives;
-            daichijuuCalls = maxDaichijuuCalls; // 大地獣の召喚回数をリセット
+            
+            // 大地獣の最大召喚回数をデバイスによって設定
+            const isMobile = window.innerWidth <= 768;
+            maxDaichijuuCalls = isMobile ? 3 : 5; // スマホなら3回、PCなら5回
+            daichijuuCalls = maxDaichijuuCalls; // 初期化
+            
             scoreMilestone = 0; // スコア回復の基準点をリセット
             currentLevel = 1; // レベルをリセット
             
