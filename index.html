@@ -256,21 +256,33 @@
                 font-size: 1.5rem; /* スマホ向けに小さく */
                 margin-bottom: 0.5rem; /* マージンを減らす */
             }
-            .game-info, .game-controls {
-                margin-top: 0.5rem; /* 余白を減らす */
-                margin-bottom: 0.5rem; /* 余白を減らす */
-            }
-            canvas {
+            /* ゲーム情報とコントロールのレイアウトを縦一列に */
+            .game-info {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
                 margin-top: 0.5rem;
                 margin-bottom: 0.5rem;
             }
-            .game-info div {
-                font-size: 0.8rem; /* さらに小さく */
+            .game-info div { /* 各情報行にマージンを追加 */
+                margin-bottom: 0.2rem;
+                font-size: 0.8rem;
+            }
+            .game-info div:last-child {
+                margin-bottom: 0;
+            }
+
+            .game-controls {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin-top: 0.5rem;
+                margin-bottom: 0.5rem;
             }
             .game-button {
                 padding: 0.6rem 1rem;
                 font-size: 0.7rem; /* さらに小さく */
-                margin: 0.2rem;
+                margin: 0.2rem 0; /* 縦方向のボタン間隔を調整 */
             }
             #bgmControl {
                 font-size: 1.8rem;
@@ -749,12 +761,13 @@
         function resizeCanvas() {
             // モバイルの縦画面かどうかを判定
             const isMobilePortrait = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+            const isMobile = window.innerWidth <= 768; // 一般的なモバイル判定
 
             // 基準となるキャンバス幅（この幅でキャラクターのbaseサイズが適用されると仮定）
             const baseCanvasWidthForScaling = 800;
 
             let responsiveScale = 1;
-            if (window.innerWidth <= 768) { // モバイルデバイスの場合
+            if (isMobile) { // モバイルデバイスの場合
                 responsiveScale = window.innerWidth / baseCanvasWidthForScaling;
                 // モバイルでキャラクターを1.5倍大きくする
                 danHeng.width = baseDanHengSize * responsiveScale * mobileCharacterEnlargeFactor;
@@ -790,26 +803,37 @@
             const containerPaddingTop = parseFloat(getComputedStyle(gameContainer).paddingTop);
             const containerPaddingBottom = parseFloat(getComputedStyle(gameContainer).paddingBottom);
 
-            // Canvasが利用できる縦方向の領域
-            const availableCanvasHeight = containerHeight - h1Height - gameInfoHeight - gameControlsHeight - containerPaddingTop - containerPaddingBottom;
-            const availableCanvasWidth = containerWidth - parseFloat(getComputedStyle(gameContainer).paddingLeft) - parseFloat(getComputedStyle(gameContainer).paddingRight);
-
-
-            // Canvasのアスペクト比を調整 (スマホ縦画面ではより縦長に)
-            const targetAspectRatio = isMobilePortrait ? 9 / 16 : 16 / 9; // スマホ縦画面なら9:16、それ以外は16:9
+            const uiElementsTotalHeight = h1Height + gameInfoHeight + gameControlsHeight + containerPaddingTop + containerPaddingBottom;
 
             let newCanvasWidth;
             let newCanvasHeight;
 
-            // 利用可能な領域と目標アスペクト比に基づいてCanvasサイズを決定
-            if (availableCanvasWidth / availableCanvasHeight > targetAspectRatio) {
-                // 利用可能な領域が目標より横長の場合、高さを基準に幅を計算
-                newCanvasHeight = availableCanvasHeight;
-                newCanvasWidth = availableCanvasHeight * targetAspectRatio;
+            if (isMobile) {
+                // モバイルの場合、Canvasの幅は利用可能な最大幅にする
+                newCanvasWidth = containerWidth - parseFloat(getComputedStyle(gameContainer).paddingLeft) - parseFloat(getComputedStyle(gameContainer).paddingRight);
+                // 高さは、幅を基準に16:9のアスペクト比を維持しつつ、利用可能な縦方向のスペースを超えないようにする
+                const desiredAspectRatio = 16 / 9; // ゲームプレイエリアの理想的なアスペクト比
+                newCanvasHeight = newCanvasWidth / desiredAspectRatio;
+
+                const availableVerticalSpace = containerHeight - uiElementsTotalHeight;
+
+                if (newCanvasHeight > availableVerticalSpace) {
+                    newCanvasHeight = availableVerticalSpace;
+                    newCanvasWidth = newCanvasHeight * desiredAspectRatio; // 高さに合わせて幅を再計算
+                }
             } else {
-                // 利用可能な領域が目標より縦長または同じ場合、幅を基準に高さを計算
-                newCanvasWidth = availableCanvasWidth;
-                newCanvasHeight = availableCanvasWidth / targetAspectRatio;
+                // PCの場合の既存ロジック
+                const availableCanvasWidthPC = containerWidth - parseFloat(getComputedStyle(gameContainer).paddingLeft) - parseFloat(getComputedStyle(gameContainer).paddingRight);
+                const availableCanvasHeightPC = containerHeight - uiElementsTotalHeight;
+                const targetAspectRatioPC = 16 / 9;
+
+                if (availableCanvasWidthPC / availableCanvasHeightPC > targetAspectRatioPC) {
+                    newCanvasHeight = availableCanvasHeightPC;
+                    newCanvasWidth = availableCanvasHeightPC * targetAspectRatioPC;
+                } else {
+                    newCanvasWidth = availableCanvasWidthPC;
+                    newCanvasHeight = availableCanvasWidthPC / targetAspectRatioPC;
+                }
             }
 
             // Canvasの描画バッファサイズを設定
