@@ -826,7 +826,7 @@
             draw();
 
             // 星玉の生成
-            と (currentTime - lastJadeSpawnTime > jadeSpawnInterval) {
+            if (currentTime - lastJadeSpawnTime > jadeSpawnInterval) {
                 stellarJades.push({
                     x: Math.random() * (canvas.width - jadeSize),
                     y: -jadeSize, // 画面外から降らせる
