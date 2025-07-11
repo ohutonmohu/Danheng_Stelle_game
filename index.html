@@ -331,8 +331,8 @@
         <div id="game-info" class="game-info">
             <div id="score" class="text-xl">スコア: 0</div>
             <div id="lives" class="text-xl">ミス: 0 / 3</div>
-            <div id="assistCalls" class="text-xl">お助け: 5 / 5</div> <!-- お助けキャラの召喚回数表示を追加 -->
-            <div id="assistKeyHint" class="text-lg mt-2"></div> <!-- 新しいヒント表示要素 -->
+            <div id="daichijuuCalls" class="text-xl">大地獣: 5 / 5</div> <!-- 大地獣の召喚回数表示に変更 -->
+            <div id="daichijuuKeyHint" class="text-lg mt-2"></div> <!-- 新しいヒント表示要素 -->
             <div id="bgmStatus" class="text-lg mt-1">BGM: オン</div> <!-- BGMステータス表示要素を追加 -->
         </div>
         <div id="game-controls" class="game-controls">
@@ -340,8 +340,8 @@
             <button id="startButton" class="game-button" disabled>ゲームスタート</button>
             <!-- スペースキーでの再スタートは機能として残しつつ、ボタンは非表示にする -->
             <button id="restartButton" class="game-button hidden">(スペースキーでもう一度)</button>
-            <!-- お助けキャラ召喚ボタンも機能は残しつつ、表示は非表示にする -->
-            <button id="assistButton" class="game-button hidden">お助けキャラ召喚</button>
+            <!-- 大地獣召喚ボタンも機能は残しつつ、表示は非表示にする -->
+            <button id="daichijuuButton" class="game-button hidden">大地獣召喚</button>
             <button id="showRankingButton" class="game-button mt-4">スコアランキングを見る</button>
         </div>
         <!-- BGMクレジットの追加 -->
@@ -390,10 +390,10 @@
         const ctx = canvas.getContext('2d');
         const scoreDisplay = document.getElementById('score');
         const livesDisplay = document.getElementById('lives');
-        const assistCallsDisplay = document.getElementById('assistCalls'); // お助けキャラの召喚回数表示要素
+        const daichijuuCallsDisplay = document.getElementById('daichijuuCalls'); // 大地獣の召喚回数表示要素
         const startButton = document.getElementById('startButton');
         const restartButton = document.getElementById('restartButton');
-        const assistButton = document.getElementById('assistButton'); // お助けキャラ召喚ボタン
+        const daichijuuButton = document.getElementById('daichijuuButton'); // 大地獣召喚ボタン
         const messageBox = document.getElementById('messageBox');
         const messageText = document.getElementById('messageText');
         const messageBoxButton = document.getElementById('messageBoxButton');
@@ -446,20 +446,20 @@
         };
         hoshino.image.src = "./stelle.png"; // HTMLファイルと同じディレクトリにあるstelle.pngを読み込む
 
-        // お助けキャラの定義
-        const assistCharacter = {
+        // 大地獣の定義
+        const daichijuuCharacter = {
             x: 0,
             y: 0,
             width: 70, // 初期値（PC基準）
             height: 70, // 初期値（PC基準）
-            speed: 10, // お助けキャラの移動速度
+            speed: 10, // 大地獣の移動速度
             direction: 1, // 移動方向 (1:右, -1:左)
             image: new Image(),
             active: false, // 現在活動中か
             duration: 180, // 活動時間 (フレーム数、例: 60fpsで3秒)
             timer: 0 // 残り活動時間
         };
-        assistCharacter.image.src = "./assist_char.png"; // HTMLファイルと同じディレクトリにあるassist_char.pngを読み込む
+        daichijuuCharacter.image.src = "./assist_char.png"; // HTMLファイルと同じディレクトリにあるassist_char.pngを読み込む
 
         // 星玉の画像定義
         const jadeImage = new Image();
@@ -468,7 +468,7 @@
 
         // 画像の読み込み完了を待つ
         let loadedImagesCount = 0;
-        const totalImagesToLoad = 4; // 丹恒、星ちゃん、お助けキャラ、星玉の4枚
+        const totalImagesToLoad = 4; // 丹恒、星ちゃん、大地獣、星玉の4枚
         let imageLoadTimeout; // タイムアウトIDを保持する変数
 
         // 画像が一つ読み込まれた、またはエラーになった時の処理
@@ -485,7 +485,7 @@
         // Attach event listeners BEFORE setting src
         danHeng.image.onload = handleImageLoadComplete;
         hoshino.image.onload = handleImageLoadComplete;
-        assistCharacter.image.onload = handleImageLoadComplete; // お助けキャラの画像ロードハンドラ
+        daichijuuCharacter.image.onload = handleImageLoadComplete; // 大地獣の画像ロードハンドラ
         jadeImage.onload = handleImageLoadComplete; // 星玉の画像ロードハンドラ
         danHeng.image.onerror = () => {
             console.error("[ERROR] Failed to load Dan Heng image. Using fallback.");
@@ -495,8 +495,8 @@
             console.error("[ERROR] Failed to load Hoshino image. Using fallback.");
             handleImageLoadComplete(); // エラーでもカウントを進める
         };
-        assistCharacter.image.onerror = () => {
-            console.error("[ERROR] Failed to load Assist Character image. Using fallback.");
+        daichijuuCharacter.image.onerror = () => {
+            console.error("[ERROR] Failed to load Daichijuu Character image. Using fallback.");
             handleImageLoadComplete(); // エラーでもカウントを進める
         };
         jadeImage.onerror = () => {
@@ -511,9 +511,9 @@
         let jadeSpawnInterval = 1000; // ms (難易度によって変動)
         let lastJadeSpawnTime = 0;
 
-        let assistCalls = 5; // お助けキャラの初期召喚回数
-        const maxAssistCalls = 5; // お助けキャラの最大召喚回数
-        const assistRecoveryPoints = 100; // 100点ごとに1回回復
+        let daichijuuCalls = 5; // 大地獣の初期召喚回数
+        const maxDaichijuuCalls = 5; // 大地獣の最大召喚回数
+        const daichijuuRecoveryPoints = 100; // 100点ごとに1回回復
         let scoreMilestone = 0; // 次の回復までのスコア基準点
         let infoMessageTimeoutId = null; // メッセージ自動消去用のタイマーID
         let currentLevel = 1; // 現在のレベル
@@ -578,9 +578,9 @@
 
                 let initialMessage = "";
                 if (isMobile && isPortrait) { // スマホの縦画面
-                    initialMessage = `操作方法：\n・左右移動：画面スライド\n・お助け召喚/開始/再開：画面タップ\n・BGM：右上のアイコン\n\n※BGMが流れます！\n\n画面をタップしてゲームスタート！\nスコアはランキングで確認・登録できるよ！`;
+                    initialMessage = `操作方法：\n・左右移動：画面スライド\n・大地獣召喚/開始/再開：画面タップ\n・BGM：右上のアイコン\n\n※BGMが流れます！\n\n画面をタップしてゲームスタート！\nスコアはランキングで確認・登録できるよ！`;
                 } else { // PCまたはスマホの横画面
-                    initialMessage = `操作方法：\n\n【PC】\n左右移動：矢印キー左右 または A/Dキー\nお助けキャラ召喚：スペースキー\nゲーム開始/再開：スペースキー\nBGMオンオフ切り替え：Mキー\n\n※注意！BGMが流れます！\n\nスペースキー または 画面をタップしてゲームスタート！\n\nスコアランキングを見るには「スコアランキングを見る」ボタンを押してね！\nゲームオーバー後にはスコアを登録できるよ！`;
+                    initialMessage = `操作方法：\n\n【PC】\n左右移動：矢印キー左右 または A/Dキー\n大地獣召喚：スペースキー\nゲーム開始/再開：スペースキー\nBGMオンオフ切り替え：Mキー\n\n※注意！BGMが流れます！\n\nスペースキー または 画面をタップしてゲームスタート！\n\nスコアランキングを見るには「スコアランキングを見る」ボタンを押してね！\nゲームオーバー後にはスコアを登録できるよ！`;
                 }
                 messageText.innerHTML = initialMessage.replace(/\n/g, '<br>');
             }
@@ -609,13 +609,13 @@
                 ctx.fillRect(hoshino.x, hoshino.y, hoshino.width, hoshino.height);
             }
 
-            // お助けキャラを描画 (活動中の場合)
-            if (assistCharacter.active) {
-                if (assistCharacter.image.complete && assistCharacter.image.naturalWidth !== 0) {
-                    ctx.drawImage(assistCharacter.image, assistCharacter.x, assistCharacter.y, assistCharacter.width, assistCharacter.height);
+            // 大地獣を描画 (活動中の場合)
+            if (daichijuuCharacter.active) {
+                if (daichijuuCharacter.image.complete && daichijuuCharacter.image.naturalWidth !== 0) {
+                    ctx.drawImage(daichijuuCharacter.image, daichijuuCharacter.x, daichijuuCharacter.y, daichijuuCharacter.width, daichijuuCharacter.height);
                 } else {
                     ctx.fillStyle = 'yellow'; // フォールバックカラー
-                    ctx.fillRect(assistCharacter.x, assistCharacter.y, assistCharacter.width, assistCharacter.height);
+                    ctx.fillRect(daichijuuCharacter.x, daichijuuCharacter.y, daichijuuCharacter.width, daichijuuCharacter.height);
                 }
             }
 
@@ -648,7 +648,7 @@
         function resetGame() {
             score = 0;
             lives = maxLives;
-            assistCalls = maxAssistCalls; // お助けキャラの召喚回数をリセット
+            daichijuuCalls = maxDaichijuuCalls; // 大地獣の召喚回数をリセット
             scoreMilestone = 0; // スコア回復の基準点をリセット
             currentLevel = 1; // レベルをリセット
             
@@ -662,8 +662,8 @@
             cancelAnimationFrame(animationFrameId);
             startButton.classList.remove('hidden');
             restartButton.classList.add('hidden');
-            assistButton.disabled = false; // お助けキャラボタンを有効化
-            assistCharacter.active = false; // お助けキャラを非アクティブに
+            daichijuuButton.disabled = false; // 大地獣ボタンを有効化
+            daichijuuCharacter.active = false; // 大地獣を非アクティブに
             
             // キャラクターの位置をリセットする前にサイズを再計算
             resizeCanvas(); // これでdanHengとhoshinoのサイズとy座標が更新される
@@ -683,19 +683,19 @@
         function updateInfo() {
             scoreDisplay.textContent = `スコア: ${score}`;
             livesDisplay.textContent = `ミス: ${lives} / ${maxLives}`;
-            assistCallsDisplay.textContent = `お助け: ${assistCalls} / ${maxAssistCalls}`; // お助けキャラの召喚回数を更新
+            daichijuuCallsDisplay.textContent = `大地獣: ${daichijuuCalls} / ${maxDaichijuuCalls}`; // 大地獣の召喚回数を更新
             
             // 新しいヒントの追加
             const isMobile = window.innerWidth <= 768; // モバイル判定
-            const assistKeyHint = document.getElementById('assistKeyHint');
+            const daichijuuKeyHint = document.getElementById('daichijuuKeyHint');
             if (gameRunning) {
                 if (isMobile) {
-                    assistKeyHint.textContent = `画面タップ：お助けキャラを召喚`; // スマホ版のヒント
+                    daichijuuKeyHint.textContent = `画面タップ：大地獣を召喚`; // スマホ版のヒント
                 } else {
-                    assistKeyHint.textContent = `スペースキー：お助けキャラを召喚`; // PC版のヒント
+                    daichijuuKeyHint.textContent = `スペースキー：大地獣を召喚`; // PC版のヒント
                 }
             } else {
-                assistKeyHint.textContent = ''; // ゲーム中でない場合は非表示
+                daichijuuKeyHint.textContent = ''; // ゲーム中でない場合は非表示
             }
 
             // BGMステータスの更新
@@ -703,32 +703,32 @@
             // BGMコントロールアイコンの更新
             bgmControl.innerHTML = `<i class="fas ${isBGMOn ? 'fa-volume-up' : 'fa-volume-mute'}"></i>`;
 
-            // お助けキャラボタンの有効/無効を切り替える (ボタンはhiddenなので、JSで無効化する必要はないが、念のため)
-            if (gameRunning && assistCalls > 0 && !assistCharacter.active) {
-                assistButton.disabled = false;
+            // 大地獣ボタンの有効/無効を切り替える (ボタンはhiddenなので、JSで無効化する必要はないが、念のため)
+            if (gameRunning && daichijuuCalls > 0 && !daichijuuCharacter.active) {
+                daichijuuButton.disabled = false;
             } else {
-                assistButton.disabled = true;
+                daichijuuButton.disabled = true;
             }
         }
 
-        // お助けキャラを召喚する関数
-        function callAssistCharacter() {
-            if (gameRunning && assistCalls > 0 && !assistCharacter.active) {
-                assistCalls--;
+        // 大地獣を召喚する関数
+        function callDaichijuuCharacter() {
+            if (gameRunning && daichijuuCalls > 0 && !daichijuuCharacter.active) {
+                daichijuuCalls--;
                 updateInfo();
-                assistCharacter.active = true;
-                assistCharacter.timer = assistCharacter.duration;
-                // お助けキャラをランダムな位置から出現させ、反対方向へ移動
-                assistCharacter.x = Math.random() < 0.5 ? 0 : canvas.width - assistCharacter.width; // 画面端に配置
-                assistCharacter.y = hoshino.y - 80; // 星ちゃんより少し上
-                assistCharacter.direction = (assistCharacter.x === 0) ? 1 : -1; // 出現位置に応じて移動方向を設定
-                console.log("[DEBUG] Assist character called!");
+                daichijuuCharacter.active = true;
+                daichijuuCharacter.timer = daichijuuCharacter.duration;
+                // 大地獣をランダムな位置から出現させ、反対方向へ移動
+                daichijuuCharacter.x = Math.random() < 0.5 ? 0 : canvas.width - daichijuuCharacter.width; // 画面端に配置
+                daichijuuCharacter.y = hoshino.y - 80; // 星ちゃんより少し上
+                daichijuuCharacter.direction = (daichijuuCharacter.x === 0) ? 1 : -1; // 出現位置に応じて移動方向を設定
+                console.log("[DEBUG] Daichijuu character called!");
             } else if (!gameRunning) {
-                showMessage("ゲームを開始してからお助けキャラを呼んでね！", 'info');
-            } else if (assistCharacter.active) {
-                showMessage("お助けキャラは現在活動中です！", 'info');
+                showMessage("ゲームを開始してから大地獣を呼んでね！", 'info');
+            } else if (daichijuuCharacter.active) {
+                showMessage("大地獣は現在活動中です！", 'info');
             } else {
-                showMessage("お助けキャラの召喚回数がありません！", 'info');
+                showMessage("大地獣の召喚回数がありません！", 'info');
             }
         }
 
@@ -742,8 +742,8 @@
             const originalDanHengHeight = 80;
             const originalHoshinoWidth = 90;
             const originalHoshinoHeight = 90;
-            const originalAssistCharacterWidth = 70; // お助けキャラのオリジナルサイズ
-            const originalAssistCharacterHeight = 70; // お助けキャラのオリジナルサイズ
+            const originalDaichijuuCharacterWidth = 70; // 大地獣のオリジナルサイズ
+            const originalDaichijuuCharacterHeight = 70; // 大地獣のオリジナルサイズ
 
             // 基準となるキャンバス幅（この幅でoriginalサイズが適用されると仮定）
             const referenceCanvasWidth = 800;
@@ -757,8 +757,8 @@
             danHeng.height = originalDanHengHeight * overallScale;
             hoshino.width = originalHoshinoWidth * overallScale;
             hoshino.height = originalHoshinoHeight * overallScale;
-            assistCharacter.width = originalAssistCharacterWidth * overallScale;
-            assistCharacter.height = originalAssistCharacterHeight * overallScale;
+            daichijuuCharacter.width = originalDaichijuuCharacterWidth * overallScale;
+            daichijuuCharacter.height = originalDaichijuuCharacterHeight * overallScale;
 
             // ゲームコンテナの利用可能な幅と高さ
             const gameContainer = document.querySelector('.game-container');
@@ -826,7 +826,7 @@
             draw();
 
             // 星玉の生成
-            if (currentTime - lastJadeSpawnTime > jadeSpawnInterval) {
+            と (currentTime - lastJadeSpawnTime > jadeSpawnInterval) {
                 stellarJades.push({
                     x: Math.random() * (canvas.width - jadeSize),
                     y: -jadeSize, // 画面外から降らせる
@@ -879,30 +879,30 @@
                 hoshino.direction *= -1; // 壁に当たったら反転
             }
 
-            // お助けキャラの移動と星玉収集
-            if (assistCharacter.active) {
-                assistCharacter.x += assistCharacter.speed * assistCharacter.direction;
+            // 大地獣の移動と星玉収集
+            if (daichijuuCharacter.active) {
+                daichijuuCharacter.x += daichijuuCharacter.speed * daichijuuCharacter.direction;
                 // 画面端に到達したら反転
-                if (assistCharacter.x + assistCharacter.width > canvas.width || assistCharacter.x < 0) {
-                    assistCharacter.direction *= -1;
+                if (daichijuuCharacter.x + daichijuuCharacter.width > canvas.width || daichijuuCharacter.x < 0) {
+                    daichijuuCharacter.direction *= -1;
                 }
-                assistCharacter.timer--;
+                daichijuuCharacter.timer--;
                 
                 // 活動時間終了で非アクティブ化
-                if (assistCharacter.timer <= 0) {
-                    assistCharacter.active = false;
-                    console.log("[DEBUG] Assist character deactivated (time out).");
+                if (daichijuuCharacter.timer <= 0) {
+                    daichijuuCharacter.active = false;
+                    console.log("[DEBUG] Daichijuu character deactivated (time out).");
                 }
 
                 // 星玉を収集
                 for (let i = stellarJades.length - 1; i >= 0; i--) {
                     const jade = stellarJades[i];
-                    // お助けキャラと星玉の衝突判定
-                    if (jade.x < assistCharacter.x + assistCharacter.width &&
-                        jade.x + jadeSize > assistCharacter.x &&
-                        jade.y < assistCharacter.y + assistCharacter.height &&
-                        jade.y + jadeSize > assistCharacter.y) {
-                        score += 20; // お助けキャラがゲットで20点
+                    // 大地獣と星玉の衝突判定
+                    if (jade.x < daichijuuCharacter.x + daichijuuCharacter.width &&
+                        jade.x + jadeSize > daichijuuCharacter.x &&
+                        jade.y < daichijuuCharacter.y + daichijuuCharacter.height &&
+                        jade.y + jadeSize > daichijuuCharacter.y) {
+                        score += 20; // 大地獣がゲットで20点
                         stellarJades.splice(i, 1); // 星玉を削除
                     }
                 }
@@ -936,13 +936,13 @@
                 }
             }
 
-            // お助けキャラ召喚回数の回復
-            while (score >= scoreMilestone + assistRecoveryPoints) {
-                scoreMilestone += assistRecoveryPoints;
-                if (assistCalls < maxAssistCalls) {
-                    assistCalls++;
-                    showMessage("お助けキャラの召喚回数が回復したよ！", 'info');
-                    console.log("[DEBUG] Assist call recovered.");
+            // 大地獣召喚回数の回復
+            while (score >= scoreMilestone + daichijuuRecoveryPoints) {
+                scoreMilestone += daichijuuRecoveryPoints;
+                if (daichijuuCalls < maxDaichijuuCalls) {
+                    daichijuuCalls++;
+                    showMessage("大地獣の召喚回数が回復したよ！", 'info');
+                    console.log("[DEBUG] Daichijuu call recovered.");
                 }
             }
 
@@ -1022,9 +1022,9 @@
             }
 
             startButton.classList.add('hidden');
-            // restartButtonとassistButtonは常にhiddenなので、表示/非表示の切り替えは不要
+            // restartButtonとdaichijuuButtonは常にhiddenなので、表示/非表示の切り替えは不要
             // restartButton.classList.remove('hidden'); // これは削除
-            assistButton.disabled = true; // ゲームオーバー時はお助けキャラボタンを無効化
+            daichijuuButton.disabled = true; // ゲームオーバー時は大地獣ボタンを無効化
         }
 
         // ゲーム開始
@@ -1036,9 +1036,9 @@
             if (gameRunning) return;
             gameRunning = true;
             startButton.classList.add('hidden');
-            // restartButtonとassistButtonは常にhiddenなので、表示/非表示の切り替えは不要
+            // restartButtonとdaichijuuButtonは常にhiddenなので、表示/非表示の切り替えは不要
             // restartButton.classList.add('hidden'); // これは削除
-            assistButton.disabled = false; // ゲーム開始時にお助けキャラボタンを有効化
+            daichijuuButton.disabled = false; // ゲーム開始時に大地獣ボタンを有効化
             animationFrameId = requestAnimationFrame(gameLoop);
             // BGMがオンの場合のみ再生を試みる
             if (isBGMOn) {
@@ -1145,7 +1145,7 @@
         window.addEventListener('load', async () => {
             console.log("[DEBUG] window.load event fired.");
             startButton.disabled = true; // ボタンを最初から無効化
-            assistButton.disabled = true; // お助けキャラボタンも最初から無効化
+            daichijuuButton.disabled = true; // 大地獣ボタンも最初から無効化
             showRankingButton.disabled = true; // ランキングボタンも最初から無効化
             showMessage("✨画像を読み込み中...✨", 'loading'); // ローディングメッセージを表示
 
@@ -1201,7 +1201,7 @@
             resetGame();
             startGame();
         });
-        // assistButton.addEventListener('click', callAssistCharacter); // ボタンがhiddenになるため、クリックイベントはキーボードに集約
+        // daichijuuButton.addEventListener('click', callDaichijuuCharacter); // ボタンがhiddenになるため、クリックイベントはキーボードに集約
 
         // BGMコントロールアイコンのクリックイベント
         bgmControl.addEventListener('click', () => {
@@ -1255,7 +1255,7 @@
                     }
                 } else {
                     // ゲームが実行中の場合
-                    callAssistCharacter(); // お助けキャラ召喚
+                    callDaichijuuCharacter(); // 大地獣召喚
                 }
             } else if (e.key === 'm' || e.key === 'M') { // 'M'キーでBGMをトグル (PC用)
                 isBGMOn = !isBGMOn;
@@ -1323,7 +1323,7 @@
 
             // タップ判定 (短時間のタッチで移動量が少ない場合)
             if (touchDuration < tapThreshold && Math.abs(touchEndX - touchStartX) < 10) { // 10pxは許容範囲
-                callAssistCharacter(); // お助けキャラ召喚
+                callDaichijuuCharacter(); // 大地獣召喚
             }
         });
     </script>
