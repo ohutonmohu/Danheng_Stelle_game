@@ -35,7 +35,7 @@
             display: flex;
             flex-direction: column; /* コンテナ内の要素を垂直方向に並べる */
             align-items: center; /* コンテナ内の要素を水平方向中央寄せ */
-            justify-content: flex-start; /* コンテナ内の要素を上部に寄せる（キャンバスがflex-growするため） */
+            justify-content: flex-start; /* コンテンツを上部に寄せる */
             width: 100%; /* 親要素 (body) の幅いっぱいに */
             height: 100%; /* 親要素 (body) の高さいっぱいに */
             max-width: 800px; /* PCでの最大幅を制限 */
@@ -49,6 +49,8 @@
             font-weight: bold;
             margin-bottom: 1rem;
             color: #ffffff; /* タイトルを白色に設定 */
+            text-align: center; /* タイトルを中央寄せ */
+            width: 100%; /* 幅を確保して中央寄せを有効に */
         }
 
         canvas {
@@ -75,6 +77,8 @@
         .game-info, .game-controls {
             flex-shrink: 0; /* 縮まないように */
             margin-top: 1rem; /* スペースを確保 */
+            width: 100%; /* 中央寄せのために幅を確保 */
+            text-align: center; /* テキスト中央寄せ */
         }
 
         /* メッセージボックスのスタイル調整 */
@@ -99,11 +103,6 @@
 
         .message-box button {
             margin-top: 1.5rem;
-        }
-
-        /* ゲーム情報表示を中央揃えにする */
-        #game-info {
-            text-align: center;
         }
 
         /* BGMコントロールアイコンのスタイル */
@@ -240,10 +239,22 @@
 
         /* レスポンシブ調整 */
         @media (max-width: 768px) { /* タブレットおよびそれ以下の画面幅 */
+            body {
+                justify-content: flex-start; /* コンテンツを上部に寄せる */
+            }
             .game-container {
+                border-radius: 0; /* 角丸をなくす */
+                box-shadow: none; /* 影をなくす */
                 padding: 0.5rem; /* パディングを減らす */
-                max-width: 100%; /* モバイルでは幅制限を解除 */
+                max-width: 100vw; /* モバイルでは幅制限を解除 */
                 max-height: 100vh; /* モバイルでは高さ制限を解除 */
+                width: 100vw; /* 画面幅いっぱいに */
+                height: 100vh; /* 画面高さいっぱいに */
+                justify-content: space-between; /* 要素を上下に配置 */
+            }
+            h1 {
+                font-size: 1.5rem; /* スマホ向けに小さく */
+                margin-bottom: 0.5rem; /* マージンを減らす */
             }
             .game-info, .game-controls {
                 margin-top: 0.5rem; /* 余白を減らす */
@@ -252,10 +263,6 @@
             canvas {
                 margin-top: 0.5rem;
                 margin-bottom: 0.5rem;
-            }
-            /* フォントサイズをさらに小さく */
-            h1 {
-                font-size: 1.5rem; /* スマホ向けに小さく */
             }
             .game-info div {
                 font-size: 0.8rem; /* さらに小さく */
@@ -269,6 +276,8 @@
                 font-size: 1.8rem;
                 width: 2.8rem;
                 height: 2.8rem;
+                top: 0.5rem; /* 上からの位置を調整 */
+                right: 0.5rem; /* 右からの位置を調整 */
             }
             .message-box {
                 padding: 0.8rem; /* パディングをさらに小さく */
@@ -276,7 +285,7 @@
             }
             .message-box p { /* メッセージボックス内のテキスト */
                 font-size: 0.9rem; /* テキストのフォントサイズを調整 */
-                line-height: 1.1; /* 行の高さを調整: 1.3から1.1へ変更 */
+                line-height: 1.1; /* 行の高さを調整 */
             }
             #nameInputBox input[type="text"] {
                 padding: 0.4rem;
@@ -310,7 +319,7 @@
             }
             .message-box p {
                 font-size: 0.8rem; /* テキストのフォントサイズを調整 */
-                line-height: 1.1; /* 行の高さを調整: 1.3から1.1へ変更 */
+                line-height: 1.1; /* 行の高さを調整 */
             }
         }
     </style>
@@ -569,7 +578,7 @@
 
                 let initialMessage = "";
                 if (isMobile && isPortrait) { // スマホの縦画面
-                    initialMessage = `操作方法：\n\n・左右移動：画面スライド\n・お助け召喚/開始/再開：画面タップ\n・BGM：右上のアイコン\n\n※BGMが流れます！\n\n画面をタップしてゲームスタート！\nスコアはランキングで確認・登録できるよ！`;
+                    initialMessage = `操作方法：\n・左右移動：画面スライド\n・お助け召喚/開始/再開：画面タップ\n・BGM：右上のアイコン\n\n※BGMが流れます！\n\n画面をタップしてゲームスタート！\nスコアはランキングで確認・登録できるよ！`;
                 } else { // PCまたはスマホの横画面
                     initialMessage = `操作方法：\n\n【PC】\n左右移動：矢印キー左右 または A/Dキー\nお助けキャラ召喚：スペースキー\nゲーム開始/再開：スペースキー\nBGMオンオフ切り替え：Mキー\n\n※注意！BGMが流れます！\n\nスペースキー または 画面をタップしてゲームスタート！\n\nスコアランキングを見るには「スコアランキングを見る」ボタンを押してね！\nゲームオーバー後にはスコアを登録できるよ！`;
                 }
@@ -725,15 +734,6 @@
 
         // キャンバスとキャラクターのサイズを調整
         function resizeCanvas() {
-            // まず、CSSによって表示されているcanvasの実際のサイズを取得
-            const computedCanvasStyle = getComputedStyle(canvas);
-            const displayWidth = parseFloat(computedCanvasStyle.width);
-            const displayHeight = parseFloat(computedCanvasStyle.height);
-
-            // canvasの描画バッファサイズを、表示サイズに合わせる
-            canvas.width = displayWidth;
-            canvas.height = displayHeight;
-
             // モバイルの縦画面かどうかを判定
             const isMobilePortrait = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
 
@@ -745,56 +745,23 @@
             const originalAssistCharacterWidth = 70; // お助けキャラのオリジナルサイズ
             const originalAssistCharacterHeight = 70; // お助けキャラのオリジナルサイズ
 
-
             // 基準となるキャンバス幅（この幅でoriginalサイズが適用されると仮定）
             const referenceCanvasWidth = 800;
 
-            // 現在のキャンバス幅に対する全体的なスケールファクター
-            const overallCanvasScale = canvas.width / referenceCanvasWidth;
-
-            // モバイル縦画面時の追加縮小率
-            // 以前の0.9から1.0に変更し、キャラクターをさらに大きくする (縮小なし)
-            const mobileCharacterReductionFactor = 1.0; // 縮小なし
+            // 現在のウィンドウ幅に対する全体的なスケールファクター
+            // PCとモバイルで異なるスケールを適用
+            const overallScale = isMobilePortrait ? window.innerWidth / referenceCanvasWidth : 1;
 
             // 最終的なキャラクターサイズを計算
-            danHeng.width = originalDanHengWidth * overallCanvasScale;
-            danHeng.height = originalDanHengHeight * overallCanvasScale;
-            hoshino.width = originalHoshinoWidth * overallCanvasScale;
-            hoshino.height = originalHoshinoHeight * overallCanvasScale;
-            assistCharacter.width = originalAssistCharacterWidth * overallCanvasScale;
-            assistCharacter.height = originalAssistCharacterHeight * overallCanvasScale;
+            danHeng.width = originalDanHengWidth * overallScale;
+            danHeng.height = originalDanHengHeight * overallScale;
+            hoshino.width = originalHoshinoWidth * overallScale;
+            hoshino.height = originalHoshinoHeight * overallScale;
+            assistCharacter.width = originalAssistCharacterWidth * overallScale;
+            assistCharacter.height = originalAssistCharacterHeight * overallScale;
 
-
-            // モバイル縦画面の場合、さらに縮小
-            if (isMobilePortrait) {
-                danHeng.width *= mobileCharacterReductionFactor;
-                danHeng.height *= mobileCharacterReductionFactor;
-                hoshino.width *= mobileCharacterReductionFactor;
-                hoshino.height *= mobileCharacterReductionFactor;
-                assistCharacter.width *= mobileCharacterReductionFactor; // お助けキャラも縮小
-                assistCharacter.height *= mobileCharacterReductionFactor; // お助けキャラも縮小
-            }
-
-            // キャラクターの位置を再計算
-            danHeng.x = (canvas.width - danHeng.width) / 2;
-            // 丹恒を画面下部に配置。モバイル縦画面では少し底に近づける
-            danHeng.y = canvas.height - danHeng.height - (isMobilePortrait ? 5 : 10);
-
-            hoshino.x = (canvas.width - hoshino.width) / 2;
-            // 星ちゃんを丹恒の上に配置。モバイル縦画面では丹恒からの距離を少し縮める
-            hoshino.y = danHeng.y - hoshino.height - (isMobilePortrait ? 10 : 20);
-
-            // ゲーム画面のアスペクト比を調整 (縦長に)
-            const targetAspectRatio = isMobilePortrait ? 9 / 16 : 16 / 9; // スマホ縦画面なら9:16、それ以外は16:9
-            let newCanvasWidth;
-            let newCanvasHeight;
-
-            // コンテナの利用可能な幅と高さ
+            // ゲームコンテナの利用可能な幅と高さ
             const gameContainer = document.querySelector('.game-container');
-            const h1 = document.querySelector('h1');
-            const gameInfo = document.getElementById('game-info');
-            const gameControls = document.getElementById('game-controls');
-
             const containerWidth = gameContainer.clientWidth;
             const containerHeight = gameContainer.clientHeight;
 
@@ -805,14 +772,24 @@
                 return element.offsetHeight + parseFloat(style.marginTop) + parseFloat(style.marginBottom);
             };
 
-            const uiElementsHeight = getElementHeightWithMargin(h1) +
-                                     getElementHeightWithMargin(gameInfo) +
-                                     getElementHeightWithMargin(gameControls);
+            const h1Height = getElementHeightWithMargin(document.querySelector('h1'));
+            const gameInfoHeight = getElementHeightWithMargin(document.getElementById('game-info'));
+            const gameControlsHeight = getElementHeightWithMargin(document.getElementById('game-controls'));
+            const containerPaddingTop = parseFloat(getComputedStyle(gameContainer).paddingTop);
+            const containerPaddingBottom = parseFloat(getComputedStyle(gameContainer).paddingBottom);
 
-            // キャンバスが利用できる領域
+            // Canvasが利用できる縦方向の領域
+            const availableCanvasHeight = containerHeight - h1Height - gameInfoHeight - gameControlsHeight - containerPaddingTop - containerPaddingBottom;
             const availableCanvasWidth = containerWidth - parseFloat(getComputedStyle(gameContainer).paddingLeft) - parseFloat(getComputedStyle(gameContainer).paddingRight);
-            const availableCanvasHeight = containerHeight - uiElementsHeight - parseFloat(getComputedStyle(gameContainer).paddingTop) - parseFloat(getComputedStyle(gameContainer).paddingBottom);
 
+
+            // Canvasのアスペクト比を調整 (スマホ縦画面ではより縦長に)
+            const targetAspectRatio = isMobilePortrait ? 9 / 16 : 16 / 9; // スマホ縦画面なら9:16、それ以外は16:9
+
+            let newCanvasWidth;
+            let newCanvasHeight;
+
+            // 利用可能な領域と目標アスペクト比に基づいてCanvasサイズを決定
             if (availableCanvasWidth / availableCanvasHeight > targetAspectRatio) {
                 // 利用可能な領域が目標より横長の場合、高さを基準に幅を計算
                 newCanvasHeight = availableCanvasHeight;
@@ -823,14 +800,20 @@
                 newCanvasHeight = availableCanvasWidth / targetAspectRatio;
             }
 
-            // キャンバスの描画バッファサイズを設定
+            // Canvasの描画バッファサイズを設定
             canvas.width = newCanvasWidth;
             canvas.height = newCanvasHeight;
 
-            // キャンバスの表示サイズをCSSで設定 (object-fit: contain; と合わせて使う)
+            // Canvasの表示サイズをCSSで設定 (object-fit: contain; と合わせて使う)
             canvas.style.width = `${newCanvasWidth}px`;
             canvas.style.height = `${newCanvasHeight}px`;
 
+            // キャラクターの位置を再計算（Canvasサイズ変更後）
+            danHeng.x = (canvas.width - danHeng.width) / 2;
+            danHeng.y = canvas.height - danHeng.height - (isMobilePortrait ? 5 : 10);
+
+            hoshino.x = (canvas.width - hoshino.width) / 2;
+            hoshino.y = danHeng.y - hoshino.height - (isMobilePortrait ? 10 : 20);
 
             draw(); // リサイズ後に再描画
         }
