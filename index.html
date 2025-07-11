@@ -255,14 +255,14 @@
             }
             /* フォントサイズをさらに小さく */
             h1 {
-                font-size: 1.8rem; /* スマホ向けに小さく */
+                font-size: 1.5rem; /* スマホ向けに小さく */
             }
             .game-info div {
-                font-size: 0.9rem;
+                font-size: 0.8rem; /* さらに小さく */
             }
             .game-button {
                 padding: 0.6rem 1rem;
-                font-size: 0.8rem;
+                font-size: 0.7rem; /* さらに小さく */
                 margin: 0.2rem;
             }
             #bgmControl {
@@ -292,7 +292,13 @@
 
         @media (max-width: 480px) { /* スマートフォンなど、より小さな画面幅 */
             h1 {
-                font-size: 1.5rem; /* さらに小さく */
+                font-size: 1.2rem; /* さらに小さく */
+            }
+            .game-info div {
+                font-size: 0.7rem; /* さらに小さく */
+            }
+            .game-button {
+                font-size: 0.6rem; /* さらに小さく */
             }
         }
     </style>
@@ -735,7 +741,8 @@
             const overallCanvasScale = canvas.width / referenceCanvasWidth;
 
             // モバイル縦画面時の追加縮小率
-            const mobileCharacterReductionFactor = 0.6; // 40%縮小
+            // 以前の0.6から0.8に変更し、キャラクターを大きくする
+            const mobileCharacterReductionFactor = 0.8; // 20%縮小
 
             // 最終的なキャラクターサイズを計算
             danHeng.width = originalDanHengWidth * overallCanvasScale;
