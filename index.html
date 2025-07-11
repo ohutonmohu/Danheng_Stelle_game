@@ -423,6 +423,7 @@
         let db;
         let auth;
         let userId = 'anonymous'; // ユーザーID、認証後に更新される
+        let isAuthReady = false; // Firebase認証が完了したかどうかのフラグ
 
         // キャラクターとアイテムの定義
         const danHeng = {
@@ -478,7 +479,7 @@
             if (loadedImagesCount === totalImagesToLoad) {
                 clearTimeout(imageLoadTimeout); // タイムアウトをクリア
                 imagesLoaded = true;
-                console.log("[DEBUG] All images finished loading/erroレッド."); // Debug log
+                console.log("[DEBUG] All images finished loading/errored."); // Debug log
             }
         }
 
@@ -1053,45 +1054,51 @@
 
         // --- Firebase関連の関数 ---
         async function initializeFirebase() {
-            try {
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
 
-                // 認証状態の変更をリッスン
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        console.log("[DEBUG] Firebase authenticated. User ID:", userId);
-                    } else {
-                        // 認証トークンがあればカスタム認証、なければ匿名認証
-                        try {
-                            const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                            if (token) {
-                                await signInWithCustomToken(auth, token);
-                            } else {
-                                await signInAnonymously(auth);
+                    onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            console.log("[DEBUG] Firebase authenticated. User ID:", userId);
+                            isAuthReady = true;
+                            resolve(); // Resolve the promise when auth is ready
+                        } else {
+                            try {
+                                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                                if (token) {
+                                    await signInWithCustomToken(auth, token);
+                                } else {
+                                    await signInAnonymously(auth);
+                                }
+                                userId = auth.currentUser?.uid || crypto.randomUUID();
+                                console.log("[DEBUG] Firebase signed in (anonymously/custom). User ID:", userId);
+                                isAuthReady = true;
+                                resolve(); // Resolve the promise when auth is ready
+                            } catch (error) {
+                                console.error("[ERROR] Anonymous/Custom sign-in failed:", error);
+                                userId = crypto.randomUUID(); // Fallback if all auth fails
+                                isAuthReady = true; // Still set to true to allow non-auth related features
+                                resolve(); // Resolve even on auth error, but log it
                             }
-                            userId = auth.currentUser?.uid || crypto.randomUUID(); // 匿名認証失敗時のフォールバック
-                            console.log("[DEBUG] Firebase signed in anonymously. User ID:", userId);
-                        } catch (error) {
-                            console.error("[ERROR] Anonymous sign-in failed:", error);
-                            userId = crypto.randomUUID(); // 全ての認証失敗時のフォールバック
                         }
-                    }
-                });
-            } catch (error) {
-                console.error("[ERROR] Firebase initialization failed:", error);
-                // ローカル開発環境でのフォールバック
-                console.warn("[WARN] Running without Firebase. Score saving/loading will not work.");
-            }
+                    });
+                } catch (error) {
+                    console.error("[ERROR] Firebase initialization failed:", error);
+                    console.warn("[WARN] Running without Firebase. Score saving/loading will not work.");
+                    reject(error); // Reject the promise if initialization itself fails
+                }
+            });
         }
 
         // スコアをFirestoreに保存する関数 (プレイヤー名を引数に追加)
         async function saveScoreToFirestore(score, playerName) {
-            if (!db || !userId) { // userIdが認証されていない場合も保存しない
-                console.warn("[WARN] Firestore not initialized or user not authenticated. Score not saved.");
+            if (!isAuthReady || !db || !userId) { // isAuthReadyも確認
+                console.warn("[WARN] Firebase auth not ready or Firestore not initialized. Score not saved.");
                 return;
             }
             try {
@@ -1110,10 +1117,10 @@
 
         // Firestoreからランキングを読み込み表示する関数
         async function loadAndDisplayRanking() {
-            if (!db) {
+            if (!isAuthReady || !db) { // isAuthReadyも確認
                 rankingList.innerHTML = "<p>ランキングの読み込みに失敗しました。</p>";
-                console.warn("[WARN] Firestore not initialized. Cannot load ranking.");
-                rankingBox.style.display = 'block'; // エラーでもボックスは表示
+                console.warn("[WARN] Firebase auth not ready or Firestore not initialized. Cannot load ranking.");
+                rankingBox.style.display = 'block';
                 return;
             }
 
@@ -1164,46 +1171,49 @@
             showRankingButton.disabled = true; // ランキングボタンも最初から無効化
             showMessage("✨画像を読み込み中...✨", 'loading'); // ローディングメッセージを表示
 
-            // Firebase初期化と画像読み込みを並行して行う
-            await Promise.all([
-                initializeFirebase(),
-                new Promise(resolve => {
-                    // 画像読み込み完了またはタイムアウトで解決
-                    const checkImages = () => {
-                        if (imagesLoaded) {
-                            console.log("[DEBUG] Images loaded via promise.");
-                            resolve();
-                        } else {
-                            setTimeout(checkImages, 100); // 少し待って再チェック
-                        }
-                    };
-                    checkImages();
+            try {
+                await Promise.all([
+                    initializeFirebase(), // Firebase認証が完了するまで待機
+                    new Promise(resolve => {
+                        // 画像読み込み完了またはタイムアウトで解決
+                        const checkImages = () => {
+                            if (imagesLoaded) {
+                                console.log("[DEBUG] Images loaded via promise.");
+                                resolve();
+                            } else {
+                                setTimeout(checkImages, 100); // 少し待って再チェック
+                            }
+                        };
+                        checkImages();
 
-                    // タイムアウトを設定
-                    imageLoadTimeout = setTimeout(() => {
-                        if (!imagesLoaded) {
-                            console.warn("[WARN] Image loading timed out. Proceeding with fallback.");
-                            imagesLoaded = true; // 強制的に画像を読み込み済みとする
-                            resolve(); // タイムアウトでも解決
-                        }
-                    }, 5000); // 5秒後にタイムアウト
-                })
-            ]);
+                        // タイムアウトを設定
+                        imageLoadTimeout = setTimeout(() => {
+                            if (!imagesLoaded) {
+                                console.warn("[WARN] Image loading timed out. Proceeding with fallback.");
+                                imagesLoaded = true; // 強制的に画像を読み込み済みとする
+                                resolve(); // タイムアウトでも解決
+                            }
+                        }, 5000); // 5秒後にタイムアウト
+                    })
+                ]);
+                console.log("[DEBUG] All initial async operations completed, including Firebase auth.");
+            } catch (error) {
+                console.error("[ERROR] Initial setup failed:", error);
+                // 初期化中に致命的なエラーが発生した場合の処理
+            } finally {
+                // エラーの有無に関わらず、メッセージボックスを非表示にし、ボタンを有効化
+                messageBox.style.display = 'none';
+                startButton.disabled = false; // ボタンを有効化
+                showRankingButton.disabled = false; // ランキングボタンを有効化
 
-            console.log("[DEBUG] All initial async operations completed.");
-
-            // すべての初期化が完了したらメッセージボックスを閉じる
-            messageBox.style.display = 'none';
-            startButton.disabled = false; // ボタンを有効化
-            showRankingButton.disabled = false; // ランキングボタンを有効化
-
-            resizeCanvas(); // キャンバスの初期サイズ設定とキャラクターサイズ調整
-            resetGame(); // ゲームの初期化
-            gameBGM.volume = currentVolume; // 初期音量を設定
-            console.log("[DEBUG] Game fully initialized and ready.");
-            // 最後にユーザーへのReadyメッセージを表示
-            showMessage("", 'initial_start'); // メッセージとタイプを変更 (メッセージ内容はshowMessage関数内で生成)
-            updateInfo(); // BGMステータスを初期表示
+                resizeCanvas(); // キャンバスの初期サイズ設定とキャラクターサイズ調整
+                resetGame(); // ゲームの初期化
+                gameBGM.volume = currentVolume; // 初期音量を設定
+                console.log("[DEBUG] Game fully initialized and ready.");
+                // 最後にユーザーへのReadyメッセージを表示
+                showMessage("", 'initial_start'); // メッセージとタイプを変更 (メッセージ内容はshowMessage関数内で生成)
+                updateInfo(); // BGMステータスを初期表示
+            }
         });
         window.addEventListener('resize', () => {
             resizeCanvas();
