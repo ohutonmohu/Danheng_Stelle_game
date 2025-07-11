@@ -381,7 +381,7 @@
         // Firebase SDKのインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Canvas環境で自動的に提供される変数です。
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -478,7 +478,7 @@
             if (loadedImagesCount === totalImagesToLoad) {
                 clearTimeout(imageLoadTimeout); // タイムアウトをクリア
                 imagesLoaded = true;
-                console.log("[DEBUG] All images finished loading/errored."); // Debug log
+                console.log("[DEBUG] All images finished loading/erroレッド."); // Debug log
             }
         }
 
@@ -1122,16 +1122,26 @@
 
             try {
                 const scoresCollectionRef = collection(db, `artifacts/${appId}/public/data/scores`);
-                const q = query(scoresCollectionRef, orderBy("score", "desc"), limit(10)); // スコアの高い順にトップ10を取得
+                // orderByを削除し、limitのみでクエリ
+                const q = query(scoresCollectionRef, limit(100)); // 一旦多めに取得し、JSでソート
+
                 const querySnapshot = await getDocs(q);
 
+                let scores = [];
+                querySnapshot.forEach(doc => {
+                    scores.push(doc.data());
+                });
+
+                // JavaScriptでスコアを降順にソート
+                scores.sort((a, b) => b.score - a.score);
+
                 let rankingHtml = "";
-                if (querySnapshot.empty) {
+                if (scores.length === 0) {
                     rankingHtml = "<p>まだスコアがありません。</p>";
                 } else {
                     rankingHtml = "<ol class='list-decimal list-inside'>";
-                    querySnapshot.forEach((doc, index) => {
-                        const data = doc.data();
+                    // ソート後、上位10件を表示
+                    scores.slice(0, 10).forEach((data, index) => {
                         const isCurrentUser = data.userId === userId ? " (あなた)" : "";
                         rankingHtml += `<li class="mb-1"> ${index + 1}. ${data.playerName || "名無しプレイヤー"} : ${data.score} 点${isCurrentUser}</li>`;
                     });
