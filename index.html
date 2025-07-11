@@ -44,6 +44,13 @@
             position: relative; /* BGMクレジットの配置のために追加 */
         }
 
+        h1 {
+            font-size: 3rem; /* PCでの基準サイズ */
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #ffffff; /* タイトルを白色に設定 */
+        }
+
         canvas {
             /* 背景画像の設定 */
             background-image: url('./background.png');
@@ -248,7 +255,7 @@
             }
             /* フォントサイズをさらに小さく */
             h1 {
-                font-size: 2rem;
+                font-size: 1.8rem; /* スマホ向けに小さく */
             }
             .game-info div {
                 font-size: 0.9rem;
@@ -282,11 +289,17 @@
                 left: 0.2rem;
             }
         }
+
+        @media (max-width: 480px) { /* スマートフォンなど、より小さな画面幅 */
+            h1 {
+                font-size: 1.5rem; /* さらに小さく */
+            }
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <h1 class="text-3xl font-bold mb-4 text-purple-300">丹恒と星ちゃんの星玉集め</h1>
+        <h1 class="font-bold mb-4">丹恒と星ちゃんの星玉集め</h1>
         <canvas id="gameCanvas"></canvas>
         <div id="game-info" class="game-info">
             <div id="score" class="text-xl">スコア: 0</div>
@@ -423,7 +436,8 @@
 
         // 星玉の画像定義
         const jadeImage = new Image();
-        jadeImage.src = "./my_stellar_jade.png"; // ユーザー指定のパスに更新
+        // 星玉のイラストのファイルパスを設定
+        jadeImage.src = "./my_stellar_jade.png"; 
 
         // 画像の読み込み完了を待つ
         let loadedImagesCount = 0;
