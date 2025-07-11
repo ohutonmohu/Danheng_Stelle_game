@@ -271,8 +271,12 @@
                 height: 2.8rem;
             }
             .message-box {
-                padding: 1rem;
-                font-size: 1rem;
+                padding: 0.8rem; /* パディングをさらに小さく */
+                font-size: 0.9rem; /* フォントサイズをさらに小さく */
+            }
+            .message-box p { /* メッセージボックス内のテキスト */
+                font-size: 0.9rem; /* テキストのフォントサイズを調整 */
+                line-height: 1.3; /* 行の高さを調整 */
             }
             #nameInputBox input[type="text"] {
                 padding: 0.4rem;
@@ -299,6 +303,13 @@
             }
             .game-button {
                 font-size: 0.6rem; /* さらに小さく */
+            }
+            .message-box {
+                padding: 0.6rem; /* さらにパディングを小さく */
+                font-size: 0.8rem; /* さらにフォントサイズを小さく */
+            }
+            .message-box p {
+                font-size: 0.8rem; /* テキストのフォントサイズを調整 */
             }
         }
     </style>
@@ -557,7 +568,7 @@
 
                 let initialMessage = "";
                 if (isMobile && isPortrait) { // スマホの縦画面
-                    initialMessage = `操作方法：\n【スマホ】\n左右移動：画面スライド\nお助け召喚/開始/再開：画面タップ\nBGM：右上のアイコン\n\n※BGMが流れます！\n\n画面をタップしてゲームスタート！\nスコアはランキングで確認・登録できるよ！`;
+                    initialMessage = `操作方法：\n\n・左右移動：画面スライド\n・お助け召喚/開始/再開：画面タップ\n・BGM：右上のアイコン\n\n※BGMが流れます！\n\n画面をタップしてゲームスタート！\nスコアはランキングで確認・登録できるよ！`;
                 } else { // PCまたはスマホの横画面
                     initialMessage = `操作方法：\n\n【PC】\n左右移動：矢印キー左右 または A/Dキー\nお助けキャラ召喚：スペースキー\nゲーム開始/再開：スペースキー\nBGMオンオフ切り替え：Mキー\n\n※注意！BGMが流れます！\n\nスペースキー または 画面をタップしてゲームスタート！\n\nスコアランキングを見るには「スコアランキングを見る」ボタンを押してね！\nゲームオーバー後にはスコアを登録できるよ！`;
                 }
@@ -741,8 +752,8 @@
             const overallCanvasScale = canvas.width / referenceCanvasWidth;
 
             // モバイル縦画面時の追加縮小率
-            // 以前の0.6から0.8に変更し、キャラクターを大きくする
-            const mobileCharacterReductionFactor = 0.8; // 20%縮小
+            // 以前の0.8を0.9に変更し、キャラクターをさらに大きくする
+            const mobileCharacterReductionFactor = 0.9; // 10%縮小
 
             // 最終的なキャラクターサイズを計算
             danHeng.width = originalDanHengWidth * overallCanvasScale;
