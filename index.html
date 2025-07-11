@@ -426,11 +426,18 @@
         let isAuthReady = false; // Firebase認証が完了したかどうかのフラグ
 
         // キャラクターとアイテムの定義
+        // キャラクターの基準サイズ（PCデスクトップでの理想的なサイズ）
+        const baseDanHengSize = 80;
+        const baseHoshinoSize = 90;
+        const baseDaichijuuSize = 70;
+        // キャラクターのモバイルでの拡大率
+        const mobileCharacterEnlargeFactor = 1.5; // 1.5倍
+
         const danHeng = {
             x: 0,
             y: 0,
-            width: 80, // 初期値（PC基準）
-            height: 80, // 初期値（PC基準）
+            width: baseDanHengSize, // 初期値（後でresizeCanvasで調整）
+            height: baseDanHengSize, // 初期値（後でresizeCanvasで調整）
             speed: 16, // 丹恒の移動速度
             image: new Image()
         };
@@ -439,8 +446,8 @@
         const hoshino = {
             x: 0,
             y: 0,
-            width: 90, // 初期値（PC基準）
-            height: 90, // 初期値（PC基準）
+            width: baseHoshinoSize, // 初期値（後でresizeCanvasで調整）
+            height: baseHoshinoSize, // 初期値（後でresizeCanvasで調整）
             speed: 3,
             direction: 1, // 1:右, -1:左
             image: new Image()
@@ -451,8 +458,8 @@
         const daichijuuCharacter = {
             x: 0,
             y: 0,
-            width: 70, // 初期値（PC基準）
-            height: 70, // 初期値（PC基準）
+            width: baseDaichijuuSize, // 初期値（後でresizeCanvasで調整）
+            height: baseDaichijuuSize, // 初期値（後でresizeCanvasで調整）
             speed: 3, // 大地獣の移動速度を遅くする
             direction: 1, // 移動方向 (1:右, -1:左)
             image: new Image(),
@@ -743,28 +750,27 @@
             // モバイルの縦画面かどうかを判定
             const isMobilePortrait = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
 
-            // キャラクターの基準サイズ（PCデスクトップでの理想的なサイズ）
-            const originalDanHengWidth = 80;
-            const originalDanHengHeight = 80;
-            const originalHoshinoWidth = 90;
-            const originalHoshinoHeight = 90;
-            const originalDaichijuuCharacterWidth = 70; // 大地獣のオリジナルサイズ
-            const originalDaichijuuCharacterHeight = 70; // 大地獣のオリジナルサイズ
+            // 基準となるキャンバス幅（この幅でキャラクターのbaseサイズが適用されると仮定）
+            const baseCanvasWidthForScaling = 800;
 
-            // 基準となるキャンバス幅（この幅でoriginalサイズが適用されると仮定）
-            const referenceCanvasWidth = 800;
-
-            // 現在のウィンドウ幅に対する全体的なスケールファクター
-            // PCとモバイルで異なるスケールを適用
-            const overallScale = isMobilePortrait ? window.innerWidth / referenceCanvasWidth : 1;
-
-            // 最終的なキャラクターサイズを計算
-            danHeng.width = originalDanHengWidth * overallScale;
-            danHeng.height = originalDanHengHeight * overallScale;
-            hoshino.width = originalHoshinoWidth * overallScale;
-            hoshino.height = originalHoshinoHeight * overallScale;
-            daichijuuCharacter.width = originalDaichijuuCharacterWidth * overallScale;
-            daichijuuCharacter.height = originalDaichijuuCharacterHeight * overallScale;
+            let responsiveScale = 1;
+            if (window.innerWidth <= 768) { // モバイルデバイスの場合
+                responsiveScale = window.innerWidth / baseCanvasWidthForScaling;
+                // モバイルでキャラクターを1.5倍大きくする
+                danHeng.width = baseDanHengSize * responsiveScale * mobileCharacterEnlargeFactor;
+                danHeng.height = baseDanHengSize * responsiveScale * mobileCharacterEnlargeFactor;
+                hoshino.width = baseHoshinoSize * responsiveScale * mobileCharacterEnlargeFactor;
+                hoshino.height = baseHoshinoSize * responsiveScale * mobileCharacterEnlargeFactor;
+                daichijuuCharacter.width = baseDaichijuuSize * responsiveScale * mobileCharacterEnlargeFactor;
+                daichijuuCharacter.height = baseDaichijuuSize * responsiveScale * mobileCharacterEnlargeFactor;
+            } else { // PCの場合
+                danHeng.width = baseDanHengSize;
+                danHeng.height = baseDanHengSize;
+                hoshino.width = baseHoshinoSize;
+                hoshino.height = baseHoshinoSize;
+                daichijuuCharacter.width = baseDaichijuuSize;
+                daichijuuCharacter.height = baseDaichijuuSize;
+            }
 
             // ゲームコンテナの利用可能な幅と高さ
             const gameContainer = document.querySelector('.game-container');
