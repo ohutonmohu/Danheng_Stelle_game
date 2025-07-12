@@ -66,8 +66,7 @@
             display: block;
             flex-grow: 1; /* 残りの垂直スペースを埋める */
             width: 100%; /* 親要素の幅いっぱいに広がる */
-            height: auto; /* 高さは内容に合わせて自動調整 */
-            object-fit: contain; /* アスペクト比を維持しつつ、コンテナに収まるように */
+            /* heightはJSで設定するため、ここではautoや固定値にしない */
             touch-action: none; /* タッチイベントのデフォルト動作を無効化 */
             margin-top: 1rem; /* 上下の余白 */
             margin-bottom: 1rem; /* 上下の余白 */
@@ -265,8 +264,8 @@
                 margin-bottom: 0.5rem;
             }
             .game-info div { /* 各情報行にマージンを追加 */
-                margin-bottom: 0.2rem;
-                font-size: 0.8rem;
+                margin-bottom: 0.5rem; /* Increased margin for mobile */
+                font-size: 0.9rem; /* Slightly larger font for mobile info */
             }
             .game-info div:last-child {
                 margin-bottom: 0;
@@ -282,7 +281,7 @@
             .game-button {
                 padding: 0.6rem 1rem;
                 font-size: 0.7rem; /* さらに小さく */
-                margin: 0.2rem 0; /* 縦方向のボタン間隔を調整 */
+                margin: 0.4rem 0; /* 縦方向のボタン間隔を調整 */
             }
             #bgmControl {
                 font-size: 1.8rem;
@@ -418,7 +417,7 @@
         const showRankingButton = document.getElementById('showRankingButton'); // ランキング表示ボタン
         const closeRankingButton = document.getElementById('closeRankingButton'); // ランキング閉じるボタン
         const nameInputBox = document.getElementById('nameInputBox'); // 名前入力ボックス
-        const playerNameInput = document.getElementById('playerNameInput'); // プレイヤー名入力フィールド
+        const playerNameInput = document = document.getElementById('playerNameInput'); // プレイヤー名入力フィールド
         const submitNameButton = document.getElementById('submitNameButton'); // 名前登録ボタン
 
         let animationFrameId;
@@ -759,38 +758,22 @@
 
         // キャンバスとキャラクターのサイズを調整
         function resizeCanvas() {
-            // モバイルの縦画面かどうかを判定
-            const isMobilePortrait = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
-            const isMobile = window.innerWidth <= 768; // 一般的なモバイル判定
+            const isMobile = window.innerWidth <= 768;
 
-            // 基準となるキャンバス幅（この幅でキャラクターのbaseサイズが適用されると仮定）
-            const baseCanvasWidthForScaling = 800;
+            // キャラクターの拡大率をモバイル/PCで設定
+            const mobileCharScale = isMobile ? mobileCharacterEnlargeFactor : 1;
 
-            let responsiveScale = 1;
-            if (isMobile) { // モバイルデバイスの場合
-                responsiveScale = window.innerWidth / baseCanvasWidthForScaling;
-                // モバイルでキャラクターを1.5倍大きくする
-                danHeng.width = baseDanHengSize * responsiveScale * mobileCharacterEnlargeFactor;
-                danHeng.height = baseDanHengSize * responsiveScale * mobileCharacterEnlargeFactor;
-                hoshino.width = baseHoshinoSize * responsiveScale * mobileCharacterEnlargeFactor;
-                hoshino.height = baseHoshinoSize * responsiveScale * mobileCharacterEnlargeFactor;
-                daichijuuCharacter.width = baseDaichijuuSize * responsiveScale * mobileCharacterEnlargeFactor;
-                daichijuuCharacter.height = baseDaichijuuSize * responsiveScale * mobileCharacterEnlargeFactor;
-            } else { // PCの場合
-                danHeng.width = baseDanHengSize;
-                danHeng.height = baseDanHengSize;
-                hoshino.width = baseHoshinoSize;
-                hoshino.height = baseHoshinoSize;
-                daichijuuCharacter.width = baseDaichijuuSize;
-                daichijuuCharacter.height = baseDaichijuuSize;
-            }
+            danHeng.width = baseDanHengSize * mobileCharScale;
+            danHeng.height = baseDanHengSize * mobileCharScale;
+            hoshino.width = baseHoshinoSize * mobileCharScale;
+            hoshino.height = baseHoshinoSize * mobileCharScale;
+            daichijuuCharacter.width = baseDaichijuuSize * mobileCharScale;
+            daichijuuCharacter.height = baseDaichijuuSize * mobileCharScale;
 
-            // ゲームコンテナの利用可能な幅と高さ
             const gameContainer = document.querySelector('.game-container');
             const containerWidth = gameContainer.clientWidth;
             const containerHeight = gameContainer.clientHeight;
 
-            // UI要素の合計高さ（マージンやパディングも考慮）
             const getElementHeightWithMargin = (element) => {
                 if (!element) return 0;
                 const style = getComputedStyle(element);
@@ -805,51 +788,24 @@
 
             const uiElementsTotalHeight = h1Height + gameInfoHeight + gameControlsHeight + containerPaddingTop + containerPaddingBottom;
 
-            let newCanvasWidth;
-            let newCanvasHeight;
+            // Canvasが利用できる幅と高さを計算
+            const availableCanvasWidth = containerWidth - parseFloat(getComputedStyle(gameContainer).paddingLeft) - parseFloat(getComputedStyle(gameContainer).paddingRight);
+            const availableCanvasHeight = containerHeight - uiElementsTotalHeight;
 
-            if (isMobile) {
-                // モバイルの場合、Canvasの幅は利用可能な最大幅にする
-                newCanvasWidth = containerWidth - parseFloat(getComputedStyle(gameContainer).paddingLeft) - parseFloat(getComputedStyle(gameContainer).paddingRight);
-                // 高さは、幅を基準に16:9のアスペクト比を維持しつつ、利用可能な縦方向のスペースを超えないようにする
-                const desiredAspectRatio = 16 / 9; // ゲームプレイエリアの理想的なアスペクト比
-                newCanvasHeight = newCanvasWidth / desiredAspectRatio;
+            // Canvasの内部描画解像度を、利用可能なスペースに合わせて設定
+            // これにより、object-fit: containによる黒帯や描画位置のズレをなくす
+            canvas.width = availableCanvasWidth;
+            canvas.height = availableCanvasHeight;
 
-                const availableVerticalSpace = containerHeight - uiElementsTotalHeight;
+            // CanvasのCSS表示サイズも内部解像度に合わせる
+            canvas.style.width = `${availableCanvasWidth}px`;
+            canvas.style.height = `${availableCanvasHeight}px`;
 
-                if (newCanvasHeight > availableVerticalSpace) {
-                    newCanvasHeight = availableVerticalSpace;
-                    newCanvasWidth = newCanvasHeight * desiredAspectRatio; // 高さに合わせて幅を再計算
-                }
-            } else {
-                // PCの場合の既存ロジック
-                const availableCanvasWidthPC = containerWidth - parseFloat(getComputedStyle(gameContainer).paddingLeft) - parseFloat(getComputedStyle(gameContainer).paddingRight);
-                const availableCanvasHeightPC = containerHeight - uiElementsTotalHeight;
-                const targetAspectRatioPC = 16 / 9;
-
-                if (availableCanvasWidthPC / availableCanvasHeightPC > targetAspectRatioPC) {
-                    newCanvasHeight = availableCanvasHeightPC;
-                    newCanvasWidth = availableCanvasHeightPC * targetAspectRatioPC;
-                } else {
-                    newCanvasWidth = availableCanvasWidthPC;
-                    newCanvasHeight = availableCanvasWidthPC / targetAspectRatioPC;
-                }
-            }
-
-            // Canvasの描画バッファサイズを設定
-            canvas.width = newCanvasWidth;
-            canvas.height = newCanvasHeight;
-
-            // Canvasの表示サイズをCSSで設定 (object-fit: contain; と合わせて使う)
-            canvas.style.width = `${newCanvasWidth}px`;
-            canvas.style.height = `${newCanvasHeight}px`;
-
-            // キャラクターの位置を再計算（Canvasサイズ変更後）
-            danHeng.x = (canvas.width - danHeng.width) / 2;
-            danHeng.y = canvas.height - danHeng.height - (isMobilePortrait ? 5 : 10);
-
-            hoshino.x = (canvas.width - hoshino.width) / 2;
-            hoshino.y = danHeng.y - hoshino.height - (isMobilePortrait ? 10 : 20);
+            // キャラクターの位置を新しいCanvasの高さに合わせて再計算
+            // スマホ版では底からのマージンを少し増やして見切れを防止
+            const bottomMargin = isMobile ? 40 : 20; // モバイルで底からのマージンを増やす
+            danHeng.y = canvas.height - danHeng.height - bottomMargin;
+            hoshino.y = danHeng.y - hoshino.height - (isMobile ? 30 : 60); // 丹恒の上に星ちゃんを配置
 
             draw(); // リサイズ後に再描画
         }
